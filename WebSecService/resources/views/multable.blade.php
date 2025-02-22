@@ -7,7 +7,7 @@
             <table>
                 @foreach (range(1, 10) as $i)
                     <tr>
-                        <td>{{$i}} * {{$j}}</td><td>= {{ $i * $j }}</td>
+                        <td>{{$i}} * {{$j}}</td><td>= {{ $i * (int)$j }}</td>
                     </tr>
                 @endforeach
             </table>
