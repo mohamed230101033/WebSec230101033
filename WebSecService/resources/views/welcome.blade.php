@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bootstrap Test</title>
-    <link href="../../public/css/public/css/bootstrap.min.css" rel="stylesheet">
-    <script src="../../public/js/public/js/bootstrap.bundle.min.js"></script>
+    <link href="../../public/css/bootstrap.min.css" rel="stylesheet">
+    <script src="../../public/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
     @php($j = 5)
