@@ -2,7 +2,7 @@
 @section('title', 'Even Numbers')
 @section('content')
     <div class="card m-4">
-        <div class="card-header">Prime Numbers</div>
+        <div class="card-header">Even Numbers</div>
         <div class="card-body">
             @foreach (range(1, 100) as $i)
                 @if($i % 2 == 0)
