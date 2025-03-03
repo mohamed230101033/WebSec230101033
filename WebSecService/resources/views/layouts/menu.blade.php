@@ -13,6 +13,15 @@
  <li class="nav-item">
  <a class="nav-link" href="./multable">Multiplication Table</a>
  </li>
+ <li class="nav-item">
+ <a class="nav-link" href="./MiniTest">Mini Test</a>
+ </li>
+ <li class="nav-item">
+ <a class="nav-link" href="./transcript">Transcript</a>
+ </li>
+ <li class="nav-item">
+ <a class="nav-link" href="{{ route('users.index') }}">Users Management</a>
+ </li>
  </ul>
  </div>
 </nav>
