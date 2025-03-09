@@ -1,55 +1,57 @@
 <?php
-
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Web\UserController;
-
-Route::resource('users', UserController::class);
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\GradeController;
+use App\Http\Controllers\Web\ProductsController;
 
 Route::get('/', function () {
     return view('welcome');
 });
-Route::get('/multable/{number?}', function ($number = 5) {
-    $j = $number;
- return view('multable', compact('j')); 
-});
-Route::get('/even', function () {
- return view('even'); 
-});
-Route::get('/prime', function () {
- return view('prime');
-});
-Route::get('/MiniTest', function () {
-    $bill =[
-        [ 'item' => 'jam', 'Quantity' => 1,'Price'=> 12.50],
-        [ 'item' => 'tea', 'Quantity' => 3,'Price'=> 32.00],
-        [ 'item' => 'banana', 'Quantity' => 5,'Price'=> 2.20],
-        [ 'item' => 'Rice', 'Quantity' => 2,'Price'=> 5.75],
-    ];
 
-
-    return view('MiniTest', compact('bill'));
+Route::get('/', function () {
+    return view('welcome'); //welcome.blade.php
 });
-Route::get('/transcript', function () {
-    $student = [
-        ['name'=> 'Mohamed',
-        'id'=> '230101033',
-        'department' => 'Cyber Security',
-        'gpa' => 4.0,
-        'courses' => [
-            ['course' => 'Web Security', 'grade' => 'A+', 'code'=> ' CSC 101'],
-            ['course' => 'Data Structures', 'grade' => 'A-', 'code'=> ' CSC 102'],
-            ['course' => 'Algorithms', 'grade' => 'A', 'code'=> ' CSC 103'],
-            ['course' => 'Networking', 'grade' => 'A', 'code'=> ' CSC 104'],
-            ['course' => 'Operating Systems', 'grade' => 'A+', 'code'=> ' CSC 105'],
-        ]
-    ]
-];
 
-return view('transcript', compact('student'));
+Route::get('multable/{id?}', function ($id = 1) {
+    return view('multable', [
+        'number' => $id,
+    ]);
 });
 
 Route::get('/prime', function () {
     return view('prime');
-   });  
+});
 
+Route::get('/even', function () {
+    return view('even');
+});
+
+Route::get('test/{id}', function ($id) {
+    $courses = [
+        '1' => 'englach',
+        '2' => 'oop',
+        '3' => 'ara'
+    ];
+    return view('test', [
+        'this_id' => $courses[$id] ?? "does not exist",
+    ]);
+});
+
+Route::resource('users', UserController::class);
+Route::resource('grades', GradeController::class);
+
+Route::get('products', [ProductsController::class, 'list'])->name('products_list');
+Route::get('products/edit/{product?}', [ProductsController::class, 'edit'])->name('products_edit');
+Route::post('products/save/{product?}', [ProductsController::class, 'save'])->name('products_save');
+Route::get('products/delete/{product}', [ProductsController::class, 'delete'])->name('products_delete');
+
+Route::get('register', [UserController::class, 'register'])->name('register');
+Route::post('register', [UserController::class, 'doRegister'])->name('doRegister');
+Route::get('login', [UserController::class, 'login'])->name('login');
+Route::post('login', [UserController::class, 'doLogin'])->name('doLogin');
+Route::get('logout', [UserController::class, 'doLogout'])->name('doLogout');
+Route::get('profile/{user?}', [UserController::class, 'profile'])->name('profile')->middleware('auth');
+Route::post('profile/update-password/{user?}', [UserController::class, 'updatePassword'])->name('updatePassword')->middleware('auth');
+Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('auth');
+Route::put('users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('auth');
