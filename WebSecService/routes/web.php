@@ -1,16 +1,16 @@
 <?php
-use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\GradeController;
-use App\Http\Controllers\Web\ProductsController;
+use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\TranscriptController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
 Route::get('/', function () {
-    return view('welcome'); //welcome.blade.php
+    return view('welcome');
 });
 
 Route::get('multable/{id?}', function ($id = 1) {
@@ -26,6 +26,8 @@ Route::get('/prime', function () {
 Route::get('/even', function () {
     return view('even');
 });
+
+Route::get('/transcript', [TranscriptController::class, 'index'])->name('transcript');
 
 Route::get('test/{id}', function ($id) {
     $courses = [

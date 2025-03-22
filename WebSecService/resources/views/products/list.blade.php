@@ -53,7 +53,7 @@
                 </div>
                 <div class="col col-sm-12 col-lg-8 mt-3">
                     <h3>{{ $product->name }}</h3>
-                    <table class="table table-striped">
+                    <table class="table table-striped table-bordered border-secondary">
                         <tr><th width="20%">Name</th><td>{{ $product->name }}</td></tr>
                         <tr><th>Model</th><td>{{ $product->model }}</td></tr>
                         <tr><th>Code</th><td>{{ $product->code }}</td></tr>

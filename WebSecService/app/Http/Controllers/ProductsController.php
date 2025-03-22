@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Web;
+namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -36,6 +36,13 @@ class ProductsController extends Controller
     public function save(Request $request, Product $product = null)
     {
         $product = $product ?? new Product();
+        // Handle file upload
+        if ($request->hasFile('photo')) {
+            $file = $request->file('photo');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('images'), $filename);
+            $product->photo = $filename; // Store filename (e.g., "1698765432_lgtv50.jpg")
+        }
         $product->fill($request->all());
         $product->save();
         return redirect()->route('products_list');
