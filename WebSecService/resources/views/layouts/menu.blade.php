@@ -24,7 +24,7 @@
     <a class="nav-link" href="{{ route('grades.index') }}">GPA Calculator</a>
 </li>
 <li class="nav-item">
-    <a class="nav-link" href="{{ url('/questions') }}">Questions</a>
+    <a class="nav-link" href="{{ url('/questions') }}">MCQ Exam</a>
 </li>
 <li class="nav-item">
     <a class="nav-link" href="./products">products</a>
