@@ -24,6 +24,9 @@
     <a class="nav-link" href="{{ route('grades.index') }}">GPA Calculator</a>
 </li>
 <li class="nav-item">
+    <a class="nav-link" href="{{ url('/questions') }}">Questions</a>
+</li>
+<li class="nav-item">
     <a class="nav-link" href="./products">products</a>
 </li>
 <li class="nav-item">

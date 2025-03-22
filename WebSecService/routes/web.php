@@ -5,6 +5,7 @@ use App\Http\Controllers\GradeController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\TranscriptController;
 use App\Http\Controllers\CalculatorController;
+use App\Http\Controllers\QuestionController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,22 +31,15 @@ Route::get('/even', function () {
 
 Route::get('/transcript', [TranscriptController::class, 'index'])->name('transcript');
 
-Route::get('test/{id}', function ($id) {
-    $courses = [
-        '1' => 'englach',
-        '2' => 'oop',
-        '3' => 'ara'
-    ];
-    return view('test', [
-        'this_id' => $courses[$id] ?? "does not exist",
-    ]);
-});
-
 Route::get('/calculator', [CalculatorController::class, 'index'])->name('calculator');
 
 Route::resource('users', UserController::class);
 
 Route::resource('grades', GradeController::class);
+
+Route::resource('questions', QuestionController::class);
+Route::get('/exam', [QuestionController::class, 'startExam'])->name('questions.startExam');
+Route::post('/exam/submit', [QuestionController::class, 'submitExam'])->name('questions.submitExam');
 
 Route::get('products', [ProductsController::class, 'list'])->name('products_list');
 Route::get('products/edit/{product?}', [ProductsController::class, 'edit'])->name('products_edit');
