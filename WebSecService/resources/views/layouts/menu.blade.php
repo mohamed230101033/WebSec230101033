@@ -12,16 +12,16 @@
 <a class="nav-link" href="./prime">Prime Numbers</a>
 </li>
 <li class="nav-item">
-    <a class="nav-link" href="{{ route('transcript') }}">Transcript</a>
-</li>
-<li class="nav-item">
 <a class="nav-link" href="./multable">Multiplication Table</a>
 </li>
 <li class="nav-item">
-    <a class="nav-link" href="./products">products</a>
+    <a class="nav-link" href="{{ route('transcript') }}">Transcript</a>
 </li>
 <li class="nav-item">
     <a class="nav-link" href="{{ route('grades.index') }}">Grades</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="./products">products</a>
 </li>
 <li class="nav-item">
     <a class="nav-link" href="{{ route('users.index') }}">Users</a>
