@@ -18,7 +18,10 @@
     <a class="nav-link" href="{{ route('transcript') }}">Transcript</a>
 </li>
 <li class="nav-item">
-    <a class="nav-link" href="{{ route('grades.index') }}">Grades</a>
+    <a class="nav-link" href="{{ route('calculator') }}">Calculator</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="{{ route('grades.index') }}">GPA Calculator</a>
 </li>
 <li class="nav-item">
     <a class="nav-link" href="./products">products</a>

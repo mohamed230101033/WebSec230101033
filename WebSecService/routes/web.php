@@ -4,6 +4,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\TranscriptController;
+use App\Http\Controllers\CalculatorController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -40,7 +41,10 @@ Route::get('test/{id}', function ($id) {
     ]);
 });
 
+Route::get('/calculator', [CalculatorController::class, 'index'])->name('calculator');
+
 Route::resource('users', UserController::class);
+
 Route::resource('grades', GradeController::class);
 
 Route::get('products', [ProductsController::class, 'list'])->name('products_list');
