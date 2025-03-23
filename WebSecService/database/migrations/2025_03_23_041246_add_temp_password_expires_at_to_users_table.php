@@ -9,15 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('temp_password')->nullable()->after('security_answer');
-            $table->boolean('temp_password_used')->default(false)->after('temp_password');
+            $table->timestamp('temp_password_expires_at')->nullable()->after('temp_password_used');
         });
     }
-    
+
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['temp_password', 'temp_password_used']);
+            $table->dropColumn('temp_password_expires_at');
         });
     }
 };

@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\TranscriptController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\QuestionController;
+use Illuminate\Support\Facades\Mail;
 
 Route::get('/', function () {
     return view('welcome');
@@ -51,6 +52,7 @@ Route::post('register', [UserController::class, 'doRegister'])->name('doRegister
 Route::get('login', [UserController::class, 'login'])->name('login');
 Route::post('login', [UserController::class, 'doLogin'])->name('doLogin');
 Route::get('logout', [UserController::class, 'doLogout'])->name('doLogout');
+
 Route::get('profile/{user?}', [UserController::class, 'profile'])->name('profile')->middleware('auth');
 Route::post('profile/update-password/{user?}', [UserController::class, 'updatePassword'])->name('updatePassword')->middleware('auth');
 Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('auth');
@@ -58,7 +60,19 @@ Route::put('users/{user}', [UserController::class, 'update'])->name('users.updat
 
 Route::get('forgot-password', [UserController::class, 'showForgotPasswordForm'])->name('password.request');
 Route::post('forgot-password', [UserController::class, 'verifySecurityQuestion'])->name('password.email');
-Route::get('verify-answer', [UserController::class, 'showVerifyAnswerForm'])->name('password.verify');
-Route::post('verify-answer', [UserController::class, 'checkSecurityAnswer'])->name('password.check');
+// Route::get('verify-answer', [UserController::class, 'showVerifyAnswerForm'])->name('password.verify');
+// Route::post('verify-answer', [UserController::class, 'checkSecurityAnswer'])->name('password.check');
 Route::get('reset-password', [UserController::class, 'showResetPasswordForm'])->name('password.reset');
 Route::post('reset-password', [UserController::class, 'resetPassword'])->name('password.update');
+
+Route::get('/test-email', function () {
+    try {
+        Mail::raw('This is a test email from WebSecService.', function ($message) {
+            $message->to('mohamedamrr666@gmail.com')
+                    ->subject('Test Email');
+        });
+        return 'Test email sent successfully!';
+    } catch (\Exception $e) {
+        return 'Failed to send test email: ' . $e->getMessage();
+    }
+});

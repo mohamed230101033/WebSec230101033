@@ -24,6 +24,9 @@ class User extends Authenticatable
         'admin',
         'security_question', // Added for Lab Exercise 4/3
         'security_answer',   // Added for Lab Exercise 4/3
+        'temp_password',      // Added for Lab Exercise 4/4
+        'temp_password_used', // Added for Lab Exercise 4/4
+        'temp_password_expires_at', // Added for expiry of temp password
     ];
 
     /**
@@ -35,6 +38,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'security_answer', // Hide security answer for security
+        'temp_password', // Hide for security
     ];
 
     /**
@@ -47,6 +51,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'temp_password_used' => 'boolean',
         ];
     }
 }

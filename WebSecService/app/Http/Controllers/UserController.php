@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\User;
@@ -7,6 +8,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Foundation\Validation\ValidatesRequests;
+use App\Http\Controllers\Controller;
+use App\Mail\TempPasswordMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -35,14 +41,14 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8', // Require password
+            'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
         ]);
 
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password), // Hash the password
+            'password' => Hash::make($request->password),
             'phone' => $request->phone,
         ]);
 
@@ -54,7 +60,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8', // Optional for update
+            'password' => 'nullable|string|min:8',
             'phone' => 'nullable|string|max:20',
         ]);
 
@@ -80,20 +86,24 @@ class UserController extends Controller
 
     public function doRegister(Request $request)
     {
-        $this->validate($request, [
+        // \Log::info('doRegister called with data: ', $request->all());
+
+        $validated = $this->validate($request, [
             'name' => ['required', 'string', 'min:5'],
             'email' => ['required', 'email', 'unique:users'],
             'password' => ['required', 'confirmed', Password::min(8)->numbers()->letters()->mixedCase()->symbols()],
             'security_question' => ['required', 'string', 'max:255'],
             'security_answer' => ['required', 'string', 'max:255'],
         ]);
-        $user = new User();
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->password = bcrypt($request->password); // Secure
-        $user->security_question = $request->security_question;
-        $user->security_answer = Hash::make($request->security_answer);
-        $user->save();
+
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['security_answer'] = Hash::make($validated['security_answer']);
+
+        $user = User::create($validated);
+
+        // \Log::info('User saved with ID: ' . $user->id);
+        // \Log::info('Security Question after save: ' . $user->security_question);
+        // \Log::info('Security Answer after save: ' . $user->security_answer);
 
         return redirect("/")->with('success', 'Registration successful. Please log in.');
     }
@@ -105,12 +115,37 @@ class UserController extends Controller
 
     public function doLogin(Request $request)
     {
-        if (!Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
             return redirect()->back()->withInput($request->input())->withErrors('Invalid login information.');
         }
-        $user = User::where('email', $request->email)->first();
-        Auth::setUser($user);
-        return redirect("/");
+
+        // Check if the provided password matches the temporary password
+        if ($user->temp_password && !$user->temp_password_used && $user->temp_password_expires_at >= now() && Hash::check($request->password, $user->temp_password)) {
+            Auth::login($user);
+            // Mark the temporary password as used
+            $user->temp_password_used = true;
+            $user->temp_password = null;
+            $user->temp_password_expires_at = null;
+            $user->save();
+            // Redirect to change password page
+            return redirect()->route('password.reset')->with('status', 'Please set a new password.');
+        } elseif ($user->temp_password && $user->temp_password_expires_at < now()) {
+            return redirect()->back()->withInput($request->input())->withErrors('The temporary password has expired. Please request a new one.');
+        }
+
+        // Regular login with permanent password
+        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+            return redirect("/");
+        }
+
+        return redirect()->back()->withInput($request->input())->withErrors('Invalid login information.');
     }
 
     public function doLogout(Request $request)
@@ -154,57 +189,65 @@ class UserController extends Controller
         return view('users.forgot_password');
     }
 
+
     public function verifySecurityQuestion(Request $request)
     {
-        $request->validate(['email' => 'required|email|exists:users,email']);
+        Log::info('verifySecurityQuestion started', ['email' => $request->email]);
+
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+        Log::info('Validation passed');
+
         $user = User::where('email', $request->email)->first();
-        if (!$user->security_question || !$user->security_answer) {
-            return back()->withErrors(['email' => 'No security question set for this user.']);
+        if (!$user) {
+            Log::info('User not found', ['email' => $request->email]);
+            return back()->withErrors(['email' => 'No user found with this email.']);
         }
-        session(['forgot_password_email' => $user->email]);
-        return redirect()->route('password.verify');
-    }
+        Log::info('User found', ['user_id' => $user->id]);
 
-    public function showVerifyAnswerForm()
-    {
-        $email = session('forgot_password_email');
-        if (!$email)
-            return redirect()->route('password.request')->withErrors(['session' => 'Session expired.']);
-        $user = User::where('email', $email)->first();
-        return view('users.verify_security_answer', ['security_question' => $user->security_question, 'email' => $email]);
-    }
+        // Generate a temporary password
+        $tempPassword = Str::random(12);
+        $user->temp_password = Hash::make($tempPassword);
+        $user->temp_password_used = false;
+        $user->temp_password_expires_at = now()->addMinutes(15);
+        $user->save();
+        Log::info('Temporary password generated and saved', ['temp_password' => $tempPassword]);
 
-    public function checkSecurityAnswer(Request $request)
-    {
-        $request->validate(['security_answer' => 'required|string']);
-        $email = session('forgot_password_email');
-        if (!$email)
-            return redirect()->route('password.request')->withErrors(['session' => 'Session expired.']);
-        $user = User::where('email', $email)->first();
-        if (!Hash::check($request->security_answer, $user->security_answer))
-            return back()->withErrors(['security_answer' => 'Incorrect answer.']);
-        session(['can_reset_password' => true]);
-        return redirect()->route('password.reset');
+        // Send the temporary password via email
+        Mail::to($user->email)->send(new TempPasswordMail($tempPassword));
+        Log::info('Email sent', ['to' => $user->email]);
+
+        // Log the session data before redirect
+        session(['status' => 'A temporary password has been sent to your email. It will expire in 15 minutes. Please check your inbox (or spam folder) and log in with the temporary password.']);
+        Log::info('Session data set', ['status' => session('status')]);
+
+        Log::info('Redirecting to login page');
+        return redirect()->route('login');
     }
 
     public function showResetPasswordForm()
     {
-        if (!session('can_reset_password'))
-            return redirect()->route('password.request')->withErrors(['session' => 'Invalid session.']);
-        $email = session('forgot_password_email');
-        return view('users.reset_password', ['email' => $email]);
+        if (!Auth::check()) {
+            return redirect()->route('login')->withErrors(['session' => 'Please log in with your temporary password first.']);
+        }
+        return view('users.reset_password', ['email' => Auth::user()->email]);
     }
 
     public function resetPassword(Request $request)
     {
-        $request->validate(['password' => 'required|string|min:8|confirmed']);
-        if (!session('can_reset_password'))
-            return redirect()->route('password.request')->withErrors(['session' => 'Invalid session.']);
-        $email = session('forgot_password_email');
-        $user = User::where('email', $email)->first();
+        $request->validate([
+            'password' => ['required', 'confirmed', Password::min(8)->numbers()->letters()->mixedCase()->symbols()],
+        ]);
+
+        if (!Auth::check()) {
+            return redirect()->route('login')->withErrors(['session' => 'Please log in with your temporary password first.']);
+        }
+
+        $user = Auth::user();
         $user->password = Hash::make($request->password);
         $user->save();
-        session()->forget(['forgot_password_email', 'can_reset_password']);
-        return redirect()->route('login')->with('status', 'Password reset successfully.');
+
+        return redirect()->route('login')->with('status', 'Password reset successfully. Please log in with your new password.');
     }
 }
