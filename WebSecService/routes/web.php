@@ -55,3 +55,10 @@ Route::get('profile/{user?}', [UserController::class, 'profile'])->name('profile
 Route::post('profile/update-password/{user?}', [UserController::class, 'updatePassword'])->name('updatePassword')->middleware('auth');
 Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('auth');
 Route::put('users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('auth');
+
+Route::get('forgot-password', [UserController::class, 'showForgotPasswordForm'])->name('password.request');
+Route::post('forgot-password', [UserController::class, 'verifySecurityQuestion'])->name('password.email');
+Route::get('verify-answer', [UserController::class, 'showVerifyAnswerForm'])->name('password.verify');
+Route::post('verify-answer', [UserController::class, 'checkSecurityAnswer'])->name('password.check');
+Route::get('reset-password', [UserController::class, 'showResetPasswordForm'])->name('password.reset');
+Route::post('reset-password', [UserController::class, 'resetPassword'])->name('password.update');

@@ -15,12 +15,12 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $query = User::query();
-        
+
         if ($request->has('search')) {
             $query->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%');
+                ->orWhere('email', 'like', '%' . $request->search . '%');
         }
-        
+
         $users = $query->paginate(10);
         return view('users.index', compact('users'));
     }
@@ -84,15 +84,18 @@ class UserController extends Controller
             'name' => ['required', 'string', 'min:5'],
             'email' => ['required', 'email', 'unique:users'],
             'password' => ['required', 'confirmed', Password::min(8)->numbers()->letters()->mixedCase()->symbols()],
+            'security_question' => ['required', 'string', 'max:255'],
+            'security_answer' => ['required', 'string', 'max:255'],
         ]);
-
         $user = new User();
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password = bcrypt($request->password); // Secure
+        $user->security_question = $request->security_question;
+        $user->security_answer = Hash::make($request->security_answer);
         $user->save();
 
-        return redirect("/");
+        return redirect("/")->with('success', 'Registration successful. Please log in.');
     }
 
     public function login(Request $request)
@@ -141,9 +144,67 @@ class UserController extends Controller
         return back()->with('success', 'Password updated successfully');
     }
 
-    
     public function edit(User $user)
     {
         return view('users.edit', compact('user'));
+    }
+
+    public function showForgotPasswordForm()
+    {
+        return view('users.forgot_password');
+    }
+
+    public function verifySecurityQuestion(Request $request)
+    {
+        $request->validate(['email' => 'required|email|exists:users,email']);
+        $user = User::where('email', $request->email)->first();
+        if (!$user->security_question || !$user->security_answer) {
+            return back()->withErrors(['email' => 'No security question set for this user.']);
+        }
+        session(['forgot_password_email' => $user->email]);
+        return redirect()->route('password.verify');
+    }
+
+    public function showVerifyAnswerForm()
+    {
+        $email = session('forgot_password_email');
+        if (!$email)
+            return redirect()->route('password.request')->withErrors(['session' => 'Session expired.']);
+        $user = User::where('email', $email)->first();
+        return view('users.verify_security_answer', ['security_question' => $user->security_question, 'email' => $email]);
+    }
+
+    public function checkSecurityAnswer(Request $request)
+    {
+        $request->validate(['security_answer' => 'required|string']);
+        $email = session('forgot_password_email');
+        if (!$email)
+            return redirect()->route('password.request')->withErrors(['session' => 'Session expired.']);
+        $user = User::where('email', $email)->first();
+        if (!Hash::check($request->security_answer, $user->security_answer))
+            return back()->withErrors(['security_answer' => 'Incorrect answer.']);
+        session(['can_reset_password' => true]);
+        return redirect()->route('password.reset');
+    }
+
+    public function showResetPasswordForm()
+    {
+        if (!session('can_reset_password'))
+            return redirect()->route('password.request')->withErrors(['session' => 'Invalid session.']);
+        $email = session('forgot_password_email');
+        return view('users.reset_password', ['email' => $email]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate(['password' => 'required|string|min:8|confirmed']);
+        if (!session('can_reset_password'))
+            return redirect()->route('password.request')->withErrors(['session' => 'Invalid session.']);
+        $email = session('forgot_password_email');
+        $user = User::where('email', $email)->first();
+        $user->password = Hash::make($request->password);
+        $user->save();
+        session()->forget(['forgot_password_email', 'can_reset_password']);
+        return redirect()->route('login')->with('status', 'Password reset successfully.');
     }
 }

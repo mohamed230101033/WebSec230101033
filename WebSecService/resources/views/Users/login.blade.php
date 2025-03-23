@@ -18,6 +18,9 @@
         <label for="password" class="form-label">Password:</label>
         <input type="password" class="form-control" placeholder="Password" name="password" required>
     </div>
+    <div class="mb-3 text-left">
+        <a href="{{ route('password.request') }}" class="btn btn-link">Forgot your password?</a>
+    </div>
     <div class="form-group mb-2">
         <button type="submit" class="btn btn-primary">Login</button>
     </div>
