@@ -15,6 +15,9 @@
 <a class="nav-link" href="./multable">Multiplication Table</a>
 </li>
 <li class="nav-item">
+<a href="{{ route('minitest') }}" class="nav-link">MiniTest Bill</a>
+</li>
+<li class="nav-item">
     <a class="nav-link" href="{{ route('transcript') }}">Transcript</a>
 </li>
 <li class="nav-item">

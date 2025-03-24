@@ -30,6 +30,23 @@ Route::get('/even', function () {
     return view('even');
 });
 
+Route::get('/minitest', function () {
+    // Sample bill information object
+    $bill = [
+        'items' => [
+            ['name' => 'Milk', 'quantity' => 2, 'price' => 2.50, 'total' => 5.00],
+            ['name' => 'Bread', 'quantity' => 1, 'price' => 1.20, 'total' => 1.20],
+            ['name' => 'Eggs', 'quantity' => 12, 'price' => 0.20, 'total' => 2.40],
+            ['name' => 'Butter', 'quantity' => 1, 'price' => 3.00, 'total' => 3.00],
+        ],
+        'subtotal' => 11.60,
+        'tax' => 1.16, // Assuming 10% tax
+        'total' => 12.76,
+    ];
+
+    return view('minitest', ['bill' => $bill]);
+})->name('minitest');
+
 Route::get('/transcript', [TranscriptController::class, 'index'])->name('transcript');
 
 Route::get('/calculator', [CalculatorController::class, 'index'])->name('calculator');
