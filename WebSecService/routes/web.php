@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\TranscriptController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\PurchaseController;
 use Illuminate\Support\Facades\Mail;
 
 Route::get('/', function () {
@@ -62,7 +63,14 @@ Route::post('/exam/submit', [QuestionController::class, 'submitExam'])->name('qu
 Route::get('products', [ProductsController::class, 'list'])->name('products_list');
 Route::get('products/edit/{product?}', [ProductsController::class, 'edit'])->name('products_edit');
 Route::post('products/save/{product?}', [ProductsController::class, 'save'])->name('products_save');
+Route::post('products/{product}/update-stock', [ProductsController::class, 'updateStock'])->name('products_update_stock');
 Route::get('products/delete/{product}', [ProductsController::class, 'delete'])->name('products_delete');
+Route::get('products/hold/{product}', [ProductsController::class, 'hold'])->name('products_hold');
+Route::get('products/unhold/{product}', [ProductsController::class, 'unhold'])->name('products_unhold');
+
+Route::get('my-purchases', [PurchaseController::class, 'list'])->name('purchases_list');
+Route::get('products/{product}/purchase', [PurchaseController::class, 'showPurchaseForm'])->name('purchase_form');
+Route::post('products/{product}/purchase', [PurchaseController::class, 'purchase'])->name('do_purchase');
 
 Route::get('register', [UserController::class, 'register'])->name('register');
 Route::post('register', [UserController::class, 'doRegister'])->name('doRegister');
@@ -81,6 +89,27 @@ Route::post('forgot-password', [UserController::class, 'verifySecurityQuestion']
 // Route::post('verify-answer', [UserController::class, 'checkSecurityAnswer'])->name('password.check');
 Route::get('reset-password', [UserController::class, 'showResetPasswordForm'])->name('password.reset');
 Route::post('reset-password', [UserController::class, 'resetPassword'])->name('password.update');
+
+// Database cleanup route - temporary
+Route::get('/fix-image-paths', function() {
+    if (!auth()->check() || !auth()->user()->hasRole('Admin')) {
+        abort(403, 'Unauthorized');
+    }
+    
+    $fixed = 0;
+    $products = \App\Models\Product::all();
+    
+    foreach ($products as $product) {
+        if ($product->photo && !is_file(public_path('images/' . $product->photo))) {
+            $product->photo = null;
+            $product->save();
+            $fixed++;
+        }
+    }
+    
+    return redirect()->route('products_list')
+        ->with('success', "Fixed $fixed products with missing images. You can now re-upload proper images.");
+})->middleware('auth');
 
 Route::get('/test-email', function () {
     try {

@@ -13,6 +13,14 @@ class Product extends Model
         'price',
         'model',
         'description',
-        'photo'
+        'photo',
+        'stock',
+        'hold'
     ];
+    
+    // Add relationship to purchases
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
 }
