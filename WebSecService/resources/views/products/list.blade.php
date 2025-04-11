@@ -81,16 +81,32 @@
                 </div>
                 @endif
                 
-                @if($product->stock <= 5 && $product->stock > 0)
-                <div class="position-absolute top-0 end-0 m-3">
-                    <span class="badge bg-warning text-dark rounded-pill">
-                        <i class="bi bi-exclamation-triangle me-1"></i> Low Stock: {{ $product->stock }}
+                @if($product->stock <= 0)
+                <div class="position-absolute top-0 end-0 m-3 stock-badge">
+                    <span class="badge bg-danger shadow-sm d-flex align-items-center">
+                        <i class="bi bi-x-circle-fill me-1"></i> 
+                        <span>Out of Stock</span>
                     </span>
                 </div>
-                @elseif($product->stock <= 0)
-                <div class="position-absolute top-0 end-0 m-3">
-                    <span class="badge bg-danger rounded-pill">
-                        <i class="bi bi-x-circle me-1"></i> Out of Stock
+                @elseif($product->stock <= 3)
+                <div class="position-absolute top-0 end-0 m-3 stock-badge">
+                    <span class="badge bg-warning text-dark shadow-sm d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> 
+                        <span>Only {{ $product->stock }} left!</span>
+                    </span>
+                </div>
+                @elseif($product->stock <= 10)
+                <div class="position-absolute top-0 end-0 m-3 stock-badge">
+                    <span class="badge bg-info shadow-sm d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-1"></i> 
+                        <span>Limited Stock: {{ $product->stock }}</span>
+                    </span>
+                </div>
+                @else
+                <div class="position-absolute top-0 end-0 m-3 stock-badge">
+                    <span class="badge bg-success shadow-sm d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill me-1"></i> 
+                        <span>In Stock</span>
                     </span>
                 </div>
                 @endif
@@ -118,9 +134,29 @@
                             <span class="text-muted">Price:</span> 
                             <span class="fw-bold text-primary">${{ number_format($product->price, 2) }}</span>
                         </div>
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <span class="text-muted">Stock:</span> 
-                            <span class="fw-bold">{{ $product->stock }}</span>
+                            <div class="d-flex align-items-center mt-1">
+                                @if($product->stock <= 0)
+                                    <span class="badge bg-danger rounded-pill">
+                                        <i class="bi bi-x-circle-fill me-1"></i> Out of stock
+                                    </span>
+                                @elseif($product->stock <= 3)
+                                    <span class="badge bg-warning text-dark rounded-pill">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                        Only {{ $product->stock }} left!
+                                    </span>
+                                @elseif($product->stock <= 10)
+                                    <span class="badge bg-info rounded-pill text-white">
+                                        <i class="bi bi-info-circle-fill me-1"></i>
+                                        Limited: {{ $product->stock }} units
+                                    </span>
+                                @else
+                                    <span class="badge bg-success rounded-pill">
+                                        {{ $product->stock }} in stock
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                         
                         @can('manage_stock')
@@ -232,7 +268,26 @@
               <img src="{{ asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail mb-3 rounded-3" style="max-height: 120px;">
             @endif
             <h5>{{ $product->name }} ({{ $product->code }})</h5>
-            <p class="text-muted">Current stock: <span class="badge bg-secondary rounded-pill">{{ $product->stock }} units</span></p>
+            <div class="d-flex justify-content-center align-items-center mt-2 mb-3">
+              <div class="me-2">Current stock:</div>
+              @if($product->stock <= 0)
+                <span class="badge bg-danger rounded-pill px-3">
+                  <i class="bi bi-x-circle-fill me-1"></i> Out of stock
+                </span>
+              @elseif($product->stock <= 3)
+                <span class="badge bg-warning text-dark rounded-pill px-3">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                  Only {{ $product->stock }} left!
+                </span>
+              @elseif($product->stock <= 10)
+                <span class="badge bg-info rounded-pill px-3 text-white">
+                  <i class="bi bi-info-circle-fill me-1"></i>
+                  Limited: {{ $product->stock }} units
+                </span>
+              @else
+                <span class="badge bg-success rounded-pill px-3">{{ $product->stock }} in stock</span>
+              @endif
+            </div>
           </div>
           
           <div class="mb-3">
@@ -300,6 +355,13 @@
     
     .fw-light {
         font-weight: 300 !important;
+    }
+    
+    .stock-badge .badge {
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
     }
 </style>
 @endsection
