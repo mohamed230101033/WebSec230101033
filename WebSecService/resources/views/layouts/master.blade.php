@@ -207,6 +207,32 @@
         @yield('content')
     </div>
     
+    <!-- Global Confirmation Modal -->
+    <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 overflow-hidden">
+          <div class="modal-header bg-primary bg-opacity-10 border-0">
+            <h5 class="modal-title" id="globalConfirmTitle">Confirm Action</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4">
+            <div class="text-center mb-3">
+              <div class="mb-3 text-primary">
+                <i class="bi bi-question-circle" style="font-size: 3rem;"></i>
+              </div>
+              <h4 class="mb-3" id="globalConfirmMessage">Are you sure you want to proceed?</h4>
+            </div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary rounded-pill" id="globalConfirmBtn">
+              <i class="bi bi-check2 me-2"></i>Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     
@@ -218,6 +244,44 @@
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl)
             });
+            
+            // Enhanced Confirmation Dialog
+            const globalConfirmModal = new bootstrap.Modal(document.getElementById('globalConfirmModal'));
+            const globalConfirmBtn = document.getElementById('globalConfirmBtn');
+            const globalConfirmTitle = document.getElementById('globalConfirmTitle');
+            const globalConfirmMessage = document.getElementById('globalConfirmMessage');
+            
+            // Override the default confirm dialog
+            const originalConfirm = window.confirm;
+            window.confirm = function(message, title = 'Confirm Action') {
+                return new Promise((resolve) => {
+                    globalConfirmTitle.textContent = title;
+                    globalConfirmMessage.textContent = message;
+                    
+                    globalConfirmBtn.onclick = function() {
+                        globalConfirmModal.hide();
+                        resolve(true);
+                    };
+                    
+                    const dismissBtns = document.querySelectorAll('[data-bs-dismiss="modal"]');
+                    dismissBtns.forEach(btn => {
+                        btn.onclick = function() {
+                            resolve(false);
+                        };
+                    });
+                    
+                    globalConfirmModal.show();
+                });
+            };
+            
+            // Fix for duplicate error messages
+            const errorAlerts = document.querySelectorAll('.alert-danger');
+            if (errorAlerts.length > 1) {
+                // Keep only the first error alert
+                for (let i = 1; i < errorAlerts.length; i++) {
+                    errorAlerts[i].remove();
+                }
+            }
             
             // Comprehensive fix for modal flickering/glitching
             const modalFixStyle = document.createElement('style');

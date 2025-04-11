@@ -100,7 +100,6 @@ class PurchaseController extends Controller
                 'quantity' => $validated['quantity'],
                 'price' => $product->price,
                 'total_price' => $totalPrice,
-                'purchase_date' => now(),
             ]);
             $purchase->save();
             

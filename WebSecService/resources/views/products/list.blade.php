@@ -5,14 +5,14 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1><i class="bi bi-shop me-2"></i> Products</h1>
         @can('add_products')
-            <a href="{{ route('products_edit') }}" class="btn btn-success">
+            <a href="{{ route('products_edit') }}" class="btn btn-success rounded-pill">
                 <i class="bi bi-plus-circle me-1"></i> Add Product
             </a>
         @endcan
     </div>
 
     <!-- Search & Filter Form -->
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="card border-0 shadow-sm mb-4 rounded-4">
         <div class="card-body">
             <form action="{{ route('products_list') }}" method="get">
                 <div class="row g-3">
@@ -55,10 +55,10 @@
                     
                     <div class="col-12">
                         <div class="d-flex">
-                            <button type="submit" class="btn btn-primary me-2">
+                            <button type="submit" class="btn btn-primary rounded-pill me-2">
                                 <i class="bi bi-search me-1"></i> Search
                             </button>
-                            <a href="{{ route('products_list') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('products_list') }}" class="btn btn-outline-secondary rounded-pill">
                                 <i class="bi bi-x-circle me-1"></i> Reset
                             </a>
                         </div>
@@ -72,10 +72,10 @@
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         @foreach($products as $product)
         <div class="col">
-            <div class="card h-100 border-0 shadow-sm product-card">
+            <div class="card h-100 border-0 shadow-sm product-card rounded-4 overflow-hidden">
                 @if($product->hold)
                 <div class="position-absolute top-0 start-0 m-3">
-                    <span class="badge bg-secondary">
+                    <span class="badge bg-secondary rounded-pill">
                         <i class="bi bi-eye-slash me-1"></i> On Hold
                     </span>
                 </div>
@@ -83,13 +83,13 @@
                 
                 @if($product->stock <= 5 && $product->stock > 0)
                 <div class="position-absolute top-0 end-0 m-3">
-                    <span class="badge bg-warning text-dark">
+                    <span class="badge bg-warning text-dark rounded-pill">
                         <i class="bi bi-exclamation-triangle me-1"></i> Low Stock: {{ $product->stock }}
                     </span>
                 </div>
                 @elseif($product->stock <= 0)
                 <div class="position-absolute top-0 end-0 m-3">
-                    <span class="badge bg-danger">
+                    <span class="badge bg-danger rounded-pill">
                         <i class="bi bi-x-circle me-1"></i> Out of Stock
                     </span>
                 </div>
@@ -124,7 +124,7 @@
                         </div>
                         
                         @can('manage_stock')
-                            <button type="button" class="btn btn-sm btn-outline-info" 
+                            <button type="button" class="btn btn-sm btn-outline-info rounded-pill shadow-sm" 
                                     data-bs-toggle="modal" 
                                     data-bs-target="#updateStockModal{{ $product->id }}">
                                 <i class="bi bi-box-seam me-1"></i> Update Stock
@@ -139,13 +139,13 @@
                     <div class="d-flex flex-wrap justify-content-between">
                         <div class="btn-group mb-2">
                             @can('edit_products')
-                            <a href="{{ route('products_edit', $product->id) }}" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('products_edit', $product->id) }}" class="btn btn-sm btn-outline-primary rounded-pill me-1">
                                 <i class="bi bi-pencil me-1"></i> Edit
                             </a>
                             @endcan
                             
                             @can('delete_products')
-                            <a href="#" class="btn btn-sm btn-outline-danger" 
+                            <a href="#" class="btn btn-sm btn-outline-danger rounded-pill" 
                                data-bs-toggle="modal" data-bs-target="#deleteModal{{ $product->id }}">
                                 <i class="bi bi-trash me-1"></i> Delete
                             </a>
@@ -153,7 +153,7 @@
                             <!-- Delete Confirmation Modal -->
                             <div class="modal fade" id="deleteModal{{ $product->id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ $product->id }}" aria-hidden="true" data-bs-backdrop="static">
                               <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content">
+                                <div class="modal-content rounded-4 overflow-hidden">
                                   <div class="modal-header">
                                     <h5 class="modal-title" id="deleteModalLabel{{ $product->id }}">Confirm Delete</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -166,8 +166,8 @@
                                     </div>
                                   </div>
                                   <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <a href="{{ route('products_delete', $product->id) }}" class="btn btn-danger">
+                                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                    <a href="{{ route('products_delete', $product->id) }}" class="btn btn-danger rounded-pill">
                                         <i class="bi bi-trash me-1"></i> Delete Product
                                     </a>
                                   </div>
@@ -180,11 +180,11 @@
                         <div class="btn-group mb-2">
                             @can('hold_products')
                                 @if($product->hold)
-                                <a href="{{route('products_unhold', $product->id)}}" class="btn btn-sm btn-outline-success">
+                                <a href="{{route('products_unhold', $product->id)}}" class="btn btn-sm btn-outline-success rounded-pill me-1">
                                     <i class="bi bi-eye me-1"></i> Unhold
                                 </a>
                                 @else
-                                <a href="{{route('products_hold', $product->id)}}" class="btn btn-sm btn-outline-warning">
+                                <a href="{{route('products_hold', $product->id)}}" class="btn btn-sm btn-outline-warning rounded-pill me-1">
                                     <i class="bi bi-eye-slash me-1"></i> Hold
                                 </a>
                                 @endif
@@ -192,7 +192,7 @@
                             
                             @can('purchase_products')
                                 @if(!$product->hold && $product->stock > 0 && !auth()->user()->hasRole(['Admin', 'Employee']))
-                                <a href="{{ route('purchase_form', $product->id) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ route('purchase_form', $product->id) }}" class="btn btn-sm btn-primary rounded-pill shadow-sm px-3">
                                     <i class="bi bi-cart-plus me-1"></i> Purchase
                                 </a>
                                 @endif
@@ -219,8 +219,8 @@
 @can('manage_stock')
 <div class="modal fade" id="updateStockModal{{ $product->id }}" tabindex="-1" aria-labelledby="updateStockModalLabel{{ $product->id }}" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
+    <div class="modal-content rounded-4 overflow-hidden">
+      <div class="modal-header bg-primary bg-opacity-10">
         <h5 class="modal-title" id="updateStockModalLabel{{ $product->id }}">Update Stock: {{ $product->name }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -229,10 +229,10 @@
         <div class="modal-body">
           <div class="text-center mb-4">
             @if($product->photo && is_file(public_path('images/' . $product->photo)))
-              <img src="{{ asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail mb-3" style="max-height: 120px;">
+              <img src="{{ asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail mb-3 rounded-3" style="max-height: 120px;">
             @endif
             <h5>{{ $product->name }} ({{ $product->code }})</h5>
-            <p class="text-muted">Current stock: <span class="badge bg-secondary">{{ $product->stock }} units</span></p>
+            <p class="text-muted">Current stock: <span class="badge bg-secondary rounded-pill">{{ $product->stock }} units</span></p>
           </div>
           
           <div class="mb-3">
@@ -241,8 +241,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">
+          <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary rounded-pill">
             <i class="bi bi-check-circle me-1"></i> Update Stock
           </button>
         </div>
@@ -284,6 +284,22 @@
         max-height: 100%;
         max-width: 100%;
         object-fit: contain;
+    }
+    
+    .rounded-4 {
+        border-radius: 0.75rem !important;
+    }
+    
+    .rounded-3 {
+        border-radius: 0.5rem !important;
+    }
+    
+    .fw-medium {
+        font-weight: 500 !important;
+    }
+    
+    .fw-light {
+        font-weight: 300 !important;
     }
 </style>
 @endsection

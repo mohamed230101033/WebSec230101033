@@ -11,13 +11,18 @@ class Purchase extends Model
         'product_id',
         'quantity',
         'price',
-        'total_price',
-        'purchase_date'
+        'total_price'
     ];
 
     protected $casts = [
-        'purchase_date' => 'datetime',
+        'created_at' => 'datetime',
     ];
+
+    // Add accessor to use created_at as purchase_date
+    public function getPurchaseDateAttribute()
+    {
+        return $this->created_at;
+    }
 
     // Relationship to User
     public function user()
