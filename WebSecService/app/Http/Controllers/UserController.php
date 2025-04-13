@@ -13,6 +13,11 @@ use App\Mail\TempPasswordMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Crypt;
+use App\Mail\VerificationEmail;
+use Carbon\Carbon;
+
+
 
 class UserController extends Controller
 {
@@ -28,12 +33,12 @@ class UserController extends Controller
         }
 
         $users = $query->paginate(10);
-        return view('users.index', compact('users'));
+        return view('Users.index', compact('users'));
     }
 
     public function create()
     {
-        return view('users.create');
+        return view('Users.create');
     }
 
     public function store(Request $request)
@@ -81,7 +86,7 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
-        return view('users.register');
+        return view('Users.register');
     }
 
     public function doRegister(Request $request)
@@ -105,12 +110,20 @@ class UserController extends Controller
         // \Log::info('Security Question after save: ' . $user->security_question);
         // \Log::info('Security Answer after save: ' . $user->security_answer);
 
+        // Send verification email
+        $title = "Verification Link";
+        $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
+        $link = route("verify", ['token' => $token]);
+        Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
+       
+       
+
         return redirect("/")->with('success', 'Registration successful. Please log in.');
     }
 
     public function login(Request $request)
     {
-        return view('users.login');
+        return view('Users.login');
     }
 
     public function doLogin(Request $request)
@@ -126,6 +139,21 @@ class UserController extends Controller
             return redirect()->back()->withInput($request->input())->withErrors('Invalid login information.');
         }
 
+        // First check if email is verified for non-temporary password login
+        if (!$user->email_verified_at && Hash::check($request->password, $user->password)) {
+            // Generate verification token
+            $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
+            
+            // Send a new verification email
+            $link = route("verify", ['token' => $token]);
+            Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
+            
+            // Redirect with a helpful message
+            return redirect()->route('login')
+                ->withInput($request->only('email'))
+                ->with('success', 'A new verification email has been sent to your email address. Please check your inbox and verify your email before logging in.');
+        }
+
         // Check if the provided password matches the temporary password
         if ($user->temp_password && !$user->temp_password_used && $user->temp_password_expires_at >= now() && Hash::check($request->password, $user->temp_password)) {
             Auth::login($user);
@@ -134,6 +162,19 @@ class UserController extends Controller
             $user->temp_password = null;
             $user->temp_password_expires_at = null;
             $user->save();
+
+            // Check if the email is verified
+            if(!$user->email_verified_at) {
+                // Generate verification token
+                $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
+                
+                // Send verification email
+                $link = route("verify", ['token' => $token]);
+                Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
+                
+                return redirect()->route('verify', ['token' => $token]);
+            }
+
             // Redirect to change password page
             return redirect()->route('password.reset')->with('status', 'Please set a new password.');
         } elseif ($user->temp_password && $user->temp_password_expires_at < now()) {
@@ -142,12 +183,45 @@ class UserController extends Controller
 
         // Regular login with permanent password
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+            // Check if email is verified before allowing login
+            if(!Auth::user()->email_verified_at) {
+                Auth::logout(); // Log them out
+                // This shouldn't actually happen since we check earlier, but just in case
+                // Generate verification token
+                $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
+                return redirect()->route('verify', ['token' => $token]);
+            }
             return redirect("/");
         }
 
         return redirect()->back()->withInput($request->input())->withErrors('Invalid login information.');
     }
 
+    public function verify(Request $request) {
+        if (!$request->has('token')) {
+            // If no token is provided, send a new verification email
+            if (Auth::check()) {
+                $user = Auth::user();
+                $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
+                $link = route("verify", ['token' => $token]);
+                Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
+                
+                return redirect()->route('login')
+                    ->with('success', 'A verification email has been sent to your email address. Please check your inbox (and spam folder) and click on the verification link.');
+            } else {
+                return redirect()->route('login')
+                    ->withErrors('Please log in to verify your email.');
+            }
+        }
+
+        $decryptedData = json_decode(Crypt::decryptString($request->token), true);
+        $user = User::find($decryptedData['id']);
+        if(!$user) abort(401);
+        $user->email_verified_at = Carbon::now();
+        $user->save();
+        return view('Users.verified', compact('user'));
+    }
+       
     public function doLogout(Request $request)
     {
         Auth::logout();
@@ -157,7 +231,7 @@ class UserController extends Controller
     public function profile(User $user = null)
     {
         $user = $user ?? Auth::user();
-        return view('users.profile', compact('user'));
+        return view('Users.profile', compact('user'));
     }
 
     public function updatePassword(Request $request, User $user = null)
@@ -181,12 +255,12 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('users.edit', compact('user'));
+        return view('Users.edit', compact('user'));
     }
 
     public function showForgotPasswordForm()
     {
-        return view('users.forgot_password');
+        return view('Users.forgot_password');
     }
 
 
@@ -231,7 +305,7 @@ class UserController extends Controller
         if (!Auth::check()) {
             return redirect()->route('login')->withErrors(['session' => 'Please log in with your temporary password first.']);
         }
-        return view('users.reset_password', ['email' => Auth::user()->email]);
+        return view('Users.reset_password', ['email' => Auth::user()->email]);
     }
 
     public function resetPassword(Request $request)

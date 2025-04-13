@@ -122,3 +122,5 @@ Route::get('/test-email', function () {
         return 'Failed to send test email: ' . $e->getMessage();
     }
 });
+
+Route::get('verify', [UserController::class, 'verify'])->name('verify');
