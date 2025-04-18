@@ -38,9 +38,16 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = Role::all();
-        $permissions = Permission::all();
-        return view('Users.create', compact('roles', 'permissions'));
+        $roles = \Spatie\Permission\Models\Role::all();
+        $permissions = \Spatie\Permission\Models\Permission::all();
+        
+        // Get permissions for each role
+        $rolePermissions = [];
+        foreach ($roles as $role) {
+            $rolePermissions[$role->id] = $role->permissions->pluck('id')->toArray();
+        }
+        
+        return view('Users.create', compact('roles', 'permissions', 'rolePermissions'));
     }
 
     public function store(Request $request)
@@ -61,13 +68,18 @@ class UserController extends Controller
         ]);
 
         // Assign role
-        $role = Role::findById($request->role);
+        $role = \Spatie\Permission\Models\Role::findById($request->role);
         $user->assignRole($role);
 
-        // Assign additional permissions
+        // Get the permissions that already come with the role
+        $rolePermissions = $role->permissions->pluck('id')->toArray();
+        
+        // Assign additional permissions (exclude role permissions to avoid duplication)
         if ($request->has('permissions')) {
-            foreach ($request->permissions as $permissionId) {
-                $permission = Permission::findById($permissionId);
+            $additionalPermissions = array_diff($request->permissions, $rolePermissions);
+            
+            foreach ($additionalPermissions as $permissionId) {
+                $permission = \Spatie\Permission\Models\Permission::findById($permissionId);
                 $user->givePermissionTo($permission);
             }
         }
@@ -92,13 +104,21 @@ class UserController extends Controller
 
         $user->update($data);
 
-        // Update role (this will remove the old role and assign the new one)
-        $role = Role::findById($request->role);
+        // Update role
+        $role = \Spatie\Permission\Models\Role::findById($request->role);
         $user->syncRoles([$role]);
 
-        // Update permissions
-        $permissions = $request->has('permissions') ? $request->permissions : [];
-        $user->syncPermissions($permissions);
+        // Get the permissions that already come with the role
+        $rolePermissions = $role->permissions->pluck('id')->toArray();
+        
+        // Determine additional permissions (only those not included in the role)
+        $permissionsToSync = [];
+        if ($request->has('permissions')) {
+            $permissionsToSync = array_diff($request->permissions, $rolePermissions);
+        }
+        
+        // Sync only the additional permissions
+        $user->syncPermissions($permissionsToSync);
 
         return redirect()->route('users.index')->with('success', 'User updated successfully');
     }
@@ -280,10 +300,27 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        $roles = Role::all();
-        $permissions = Permission::all();
+        $roles = \Spatie\Permission\Models\Role::all();
+        $permissions = \Spatie\Permission\Models\Permission::all();
         $userPermissions = $user->permissions->pluck('id')->toArray();
-        return view('Users.edit', compact('user', 'roles', 'permissions', 'userPermissions'));
+        
+        // Get permissions for each role
+        $rolePermissions = [];
+        foreach ($roles as $role) {
+            $rolePermissions[$role->id] = $role->permissions->pluck('id')->toArray();
+        }
+        
+        // Get the user's current role
+        $currentRoleId = $user->roles->first()->id ?? null;
+        
+        // Determine direct permissions (those not inherited from the role)
+        $directPermissions = $userPermissions;
+        if ($currentRoleId) {
+            $rolePerms = $rolePermissions[$currentRoleId] ?? [];
+            $directPermissions = array_diff($userPermissions, $rolePerms);
+        }
+        
+        return view('Users.edit', compact('user', 'roles', 'permissions', 'userPermissions', 'rolePermissions', 'directPermissions', 'currentRoleId'));
     }
 
     public function showForgotPasswordForm()

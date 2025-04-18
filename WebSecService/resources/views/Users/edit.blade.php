@@ -56,9 +56,10 @@
                                 <div class="d-flex gap-3 flex-wrap">
                                     @foreach($roles as $role)
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="role" 
+                                        <input class="form-check-input role-radio" type="radio" name="role" 
                                                id="role_{{ $role->id }}" value="{{ $role->id }}" 
-                                               {{ old('role', $user->roles->first()->id ?? '') == $role->id ? 'checked' : '' }} required>
+                                               data-role-id="{{ $role->id }}"
+                                               {{ old('role', $currentRoleId) == $role->id ? 'checked' : '' }} required>
                                         <label class="form-check-label" for="role_{{ $role->id }}">
                                             @if($role->name == 'Admin')
                                             <span class="badge role-badge-admin"><i class="bi bi-shield-lock-fill me-1"></i> Admin</span>
@@ -81,15 +82,22 @@
 
                         <div class="row mb-4">
                             <div class="col-md-12">
-                                <label class="form-label fw-semibold mb-3">Additional Permissions</label>
-                                <p class="text-muted small mb-3">These permissions will be added in addition to the permissions from the selected role.</p>
+                                <label class="form-label fw-semibold mb-3">Permissions</label>
+                                <p class="text-muted small mb-3">
+                                    <i class="bi bi-info-circle me-1"></i> Permissions in <span class="badge bg-light text-dark border">grey</span> are included with the selected role. 
+                                    You can select additional permissions below.
+                                </p>
                                 
                                 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
                                     @foreach($permissions as $permission)
                                     <div class="col">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="permissions[]" 
-                                                   id="permission_{{ $permission->id }}" value="{{ $permission->id }}"
+                                        <div class="form-check permission-check">
+                                            <input class="form-check-input permission-checkbox" 
+                                                   type="checkbox" 
+                                                   name="permissions[]" 
+                                                   id="permission_{{ $permission->id }}" 
+                                                   value="{{ $permission->id }}"
+                                                   data-permission-id="{{ $permission->id }}"
                                                    {{ (is_array(old('permissions', $userPermissions)) && in_array($permission->id, old('permissions', $userPermissions))) ? 'checked' : '' }}>
                                             <label class="form-check-label" for="permission_{{ $permission->id }}">
                                                 {{ $permission->name }}
@@ -126,5 +134,71 @@
 .role-badge-customer {
     background-color: #198754;
 }
+
+.permission-check.disabled {
+    opacity: 0.75;
+}
+
+.permission-check.from-role .form-check-label {
+    position: relative;
+}
+
+.permission-check.from-role .form-check-label::after {
+    content: " (from role)";
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-left: 0.25rem;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Store role permissions, direct permissions, and current role ID
+    const rolePermissions = @json($rolePermissions);
+    const directPermissions = @json($directPermissions);
+    let initialRoleId = @json($currentRoleId);
+    
+    // Function to update permission checkboxes based on selected role
+    function updatePermissionCheckboxes() {
+        const selectedRoleId = document.querySelector('input[name="role"]:checked')?.value;
+        const permissionCheckboxes = document.querySelectorAll('.permission-checkbox');
+        
+        if (!selectedRoleId) return;
+        
+        // Get permissions for the selected role
+        const permissions = rolePermissions[selectedRoleId] || [];
+        
+        // Reset all permissions
+        permissionCheckboxes.forEach(checkbox => {
+            const permissionId = parseInt(checkbox.dataset.permissionId);
+            const checkDiv = checkbox.closest('.permission-check');
+            
+            // First clear all states
+            checkDiv.classList.remove('from-role', 'disabled');
+            checkbox.disabled = false;
+            
+            // If changing from initial role, reset checkboxes
+            if (selectedRoleId != initialRoleId) {
+                // Only check if it's a direct permission
+                checkbox.checked = directPermissions.includes(permissionId);
+            }
+            
+            // If this permission comes with the selected role
+            if (permissions.includes(permissionId)) {
+                checkbox.checked = true;
+                checkbox.disabled = true;
+                checkDiv.classList.add('from-role', 'disabled');
+            }
+        });
+    }
+    
+    // Initial update
+    updatePermissionCheckboxes();
+    
+    // Listen for role changes
+    document.querySelectorAll('.role-radio').forEach(radio => {
+        radio.addEventListener('change', updatePermissionCheckboxes);
+    });
+});
+</script>
 @endsection
