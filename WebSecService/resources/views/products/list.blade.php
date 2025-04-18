@@ -255,37 +255,36 @@
 @can('manage_stock')
 <div class="modal fade" id="updateStockModal{{ $product->id }}" tabindex="-1" aria-labelledby="updateStockModalLabel{{ $product->id }}" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content rounded-4 overflow-hidden">
-      <div class="modal-header bg-primary bg-opacity-10">
-        <h5 class="modal-title" id="updateStockModalLabel{{ $product->id }}">Update Stock: {{ $product->name }}</h5>
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title" id="updateStockModalLabel{{ $product->id }}">
+          <i class="bi bi-box-seam me-2 text-primary"></i>Update Stock
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form action="{{ route('products_update_stock', $product->id) }}" method="POST">
         @csrf
         <div class="modal-body">
-          <div class="text-center mb-4">
+          <div class="mb-4">
+            <h6 class="mb-3">Manage inventory for this product</h6>
+            <p class="text-muted">Product: <span class="fw-semibold text-dark">{{ $product->name }} ({{ $product->code }})</span></p>
+          
             @if($product->photo && is_file(public_path('images/' . $product->photo)))
-              <img src="{{ asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail mb-3 rounded-3" style="max-height: 120px;">
+              <div class="text-center mb-3">
+                <img src="{{ asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail rounded" style="max-height: 100px;">
+              </div>
             @endif
-            <h5>{{ $product->name }} ({{ $product->code }})</h5>
-            <div class="d-flex justify-content-center align-items-center mt-2 mb-3">
+            
+            <div class="d-flex align-items-center mt-2 mb-3">
               <div class="me-2">Current stock:</div>
               @if($product->stock <= 0)
-                <span class="badge bg-danger rounded-pill px-3">
-                  <i class="bi bi-x-circle-fill me-1"></i> Out of stock
-                </span>
+                <span class="badge bg-danger">Out of stock</span>
               @elseif($product->stock <= 3)
-                <span class="badge bg-warning text-dark rounded-pill px-3">
-                  <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                  Only {{ $product->stock }} left!
-                </span>
+                <span class="badge bg-warning text-dark">Low: {{ $product->stock }} units</span>
               @elseif($product->stock <= 10)
-                <span class="badge bg-info rounded-pill px-3 text-white">
-                  <i class="bi bi-info-circle-fill me-1"></i>
-                  Limited: {{ $product->stock }} units
-                </span>
+                <span class="badge bg-info text-white">Limited: {{ $product->stock }} units</span>
               @else
-                <span class="badge bg-success rounded-pill px-3">{{ $product->stock }} in stock</span>
+                <span class="badge bg-success">{{ $product->stock }} in stock</span>
               @endif
             </div>
           </div>
@@ -296,10 +295,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary rounded-pill">
-            <i class="bi bi-check-circle me-1"></i> Update Stock
-          </button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm</button>
         </div>
       </form>
     </div>

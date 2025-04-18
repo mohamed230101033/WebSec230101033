@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use App\Mail\VerificationEmail;
 use Carbon\Carbon;
-
-
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
 {
@@ -38,7 +38,9 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('Users.create');
+        $roles = Role::all();
+        $permissions = Permission::all();
+        return view('Users.create', compact('roles', 'permissions'));
     }
 
     public function store(Request $request)
@@ -48,14 +50,27 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
+            'role' => 'required|exists:roles,id',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
         ]);
+
+        // Assign role
+        $role = Role::findById($request->role);
+        $user->assignRole($role);
+
+        // Assign additional permissions
+        if ($request->has('permissions')) {
+            foreach ($request->permissions as $permissionId) {
+                $permission = Permission::findById($permissionId);
+                $user->givePermissionTo($permission);
+            }
+        }
 
         return redirect()->route('users.index')->with('success', 'User created successfully');
     }
@@ -67,6 +82,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8',
             'phone' => 'nullable|string|max:20',
+            'role' => 'required|exists:roles,id',
         ]);
 
         $data = $request->only(['name', 'email', 'phone']);
@@ -75,6 +91,15 @@ class UserController extends Controller
         }
 
         $user->update($data);
+
+        // Update role (this will remove the old role and assign the new one)
+        $role = Role::findById($request->role);
+        $user->syncRoles([$role]);
+
+        // Update permissions
+        $permissions = $request->has('permissions') ? $request->permissions : [];
+        $user->syncPermissions($permissions);
+
         return redirect()->route('users.index')->with('success', 'User updated successfully');
     }
 
@@ -255,7 +280,10 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('Users.edit', compact('user'));
+        $roles = Role::all();
+        $permissions = Permission::all();
+        $userPermissions = $user->permissions->pluck('id')->toArray();
+        return view('Users.edit', compact('user', 'roles', 'permissions', 'userPermissions'));
     }
 
     public function showForgotPasswordForm()
@@ -323,5 +351,36 @@ class UserController extends Controller
         $user->save();
 
         return redirect()->route('login')->with('status', 'Password reset successfully. Please log in with your new password.');
+    }
+
+    /**
+     * Add credit to a user account
+     */
+    public function addCredit(Request $request, User $user)
+    {
+        // Verify that the current user has permission to manage customer credit
+        if (!auth()->user()->hasPermissionTo('manage_customer_credit')) {
+            abort(403, 'You do not have permission to manage user credits.');
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        // Add credit to the user's account
+        $user->credit = $user->credit + $request->amount;
+        $user->save();
+
+        // Log the credit addition
+        Log::info('Credit added to user account', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'amount' => $request->amount,
+            'new_balance' => $user->credit,
+            'added_by' => auth()->user()->id,
+        ]);
+
+        return redirect()->route('users.index')
+            ->with('success', "Successfully added {$request->amount} credits to {$user->name}'s account. New balance: {$user->credit}");
     }
 }

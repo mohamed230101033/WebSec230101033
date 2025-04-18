@@ -167,32 +167,37 @@
 <div class="modal fade" id="addCreditModal" tabindex="-1" aria-labelledby="addCreditModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addCreditModalLabel">Add Credit</h5>
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="addCreditModalLabel">
+                    <i class="bi bi-credit-card text-primary me-2"></i>Add Credit
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="#" method="POST" id="addCreditForm">
                 @csrf
-                <div class="modal-body">
-                    <p>Add credit to <span id="creditUserName" class="fw-bold"></span></p>
-                    <input type="hidden" name="user_id" id="creditUserId">
-                    
-                    <div class="mb-3">
-                        <label for="creditAmount" class="form-label">Amount ($)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" id="creditAmount" name="amount" min="1" step="0.01" required>
+                <div class="modal-body pt-0">
+                    <div class="row">
+                        <div class="col-12 border-bottom mb-3 pb-3">
+                            <p class="text-muted mb-0">You are about to add credit to the account of <span id="creditUserName" class="text-dark fw-semibold"></span></p>
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="creditNote" class="form-label">Note (Optional)</label>
-                        <textarea class="form-control" id="creditNote" name="note" rows="2"></textarea>
+                    <input type="hidden" name="user_id" id="creditUserId">
+                    
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label for="creditAmount" class="form-label mb-0">Amount</label>
+                            <small class="text-muted">Current balance: <span id="userCurrentBalance" class="text-dark">$0.00</span></small>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">$</span>
+                            <input type="number" class="form-control border-start-0" id="creditAmount" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Credit</button>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4">Add Credit</button>
                 </div>
             </form>
         </div>
@@ -259,6 +264,39 @@
     font-size: 0.9rem;
     color: #6c757d;
 }
+
+.role-badge-admin {
+    background-color: #6610f2;
+}
+
+.role-badge-employee {
+    background-color: #0d6efd;
+}
+
+.role-badge-customer {
+    background-color: #198754;
+}
+
+.modal-content {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-box i {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    color: #6c757d;
+}
+
+.search-box input {
+    padding-left: 35px;
+}
 </style>
 
 <script>
@@ -276,15 +314,23 @@ document.addEventListener('DOMContentLoaded', function() {
             var button = event.relatedTarget
             var userId = button.getAttribute('data-user-id')
             var userName = button.getAttribute('data-user-name')
+            var userCredit = button.closest('tr').querySelector('td:nth-child(5) .text-success')?.textContent || '$0.00'
             
             var creditUserName = document.getElementById('creditUserName')
             var creditUserId = document.getElementById('creditUserId')
+            var userCurrentBalance = document.getElementById('userCurrentBalance')
             
             creditUserName.textContent = userName
             creditUserId.value = userId
+            userCurrentBalance.textContent = userCredit
             
-            // Update form action with correct user ID
-            document.getElementById('addCreditForm').action = '/users/' + userId + '/add-credit';
+            // Focus on amount input
+            setTimeout(function() {
+                document.getElementById('creditAmount').focus()
+            }, 500)
+            
+            // Update form action with correct user ID using the named route
+            document.getElementById('addCreditForm').action = '{{ url("users") }}/' + userId + '/add-credit';
         })
     }
 });

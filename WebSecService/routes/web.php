@@ -124,3 +124,67 @@ Route::get('/test-email', function () {
 });
 
 Route::get('verify', [UserController::class, 'verify'])->name('verify');
+
+// Setup roles and permissions route
+Route::get('/setup-roles', function () {
+    try {
+        // Create roles
+        $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
+        $employeeRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Employee', 'guard_name' => 'web']);
+        $customerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Customer', 'guard_name' => 'web']);
+        
+        $output = "Created roles: Admin, Employee, Customer<br>";
+        
+        // Create permissions
+        $permissions = [
+            'edit_products',
+            'delete_products',
+            'hold_products',
+            'manage_stock',
+            'purchase_products',
+            'manage_users',
+            'view_reports',
+            'access_admin_panel',
+        ];
+        
+        foreach ($permissions as $permissionName) {
+            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
+        }
+        $output .= "Created permissions: " . implode(', ', $permissions) . "<br>";
+        
+        // Get admin user or create if not exists
+        $adminUser = \App\Models\User::where('email', 'mohamedamrr666@gmail.com')->first();
+        if (!$adminUser) {
+            $adminUser = \App\Models\User::create([
+                'name' => 'Admin',
+                'email' => 'mohamedamrr666@gmail.com',
+                'password' => bcrypt('Qwe!2345'),
+                'admin' => true,
+                'email_verified_at' => now(),
+            ]);
+            $output .= "Created admin user: mohamedamrr666@gmail.com with password Qwe!2345<br>";
+        } else {
+            $output .= "Admin user already exists: " . $adminUser->email . "<br>";
+        }
+        
+        // Assign admin role to user
+        $adminUser->assignRole($adminRole);
+        $output .= "Assigned Admin role to: " . $adminUser->email . "<br>";
+        
+        // Give all permissions to admin
+        foreach ($permissions as $permissionName) {
+            $permission = \Spatie\Permission\Models\Permission::where('name', $permissionName)->first();
+            if ($permission) {
+                $adminRole->givePermissionTo($permission);
+            }
+        }
+        $output .= "Gave all permissions to Admin role<br>";
+        
+        return $output . "Roles and permissions setup completed successfully!";
+    } catch (\Exception $e) {
+        return "Error: " . $e->getMessage() . "<br>Line: " . $e->getLine() . "<br>File: " . $e->getFile();
+    }
+});
+
+// User credit management
+Route::post('users/{user}/add-credit', [UserController::class, 'addCredit'])->name('users.add_credit')->middleware('auth');
