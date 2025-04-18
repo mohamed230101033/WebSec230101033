@@ -28,6 +28,10 @@ class User extends Authenticatable
         'temp_password_used', // Added for Lab Exercise 4/4
         'temp_password_expires_at', // Added for expiry of temp password
         'credit', // Added for purchase system
+        'phone',
+        'phone_verified_at',
+        'phone_verification_code',
+        'phone_verification_code_expires_at',
     ];
 
     /**
@@ -54,6 +58,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'temp_password_used' => 'boolean',
             'credit' => 'decimal:2',
+            'phone_verified_at' => 'datetime',
+            'phone_verification_code_expires_at' => 'datetime',
         ];
     }
 
@@ -61,5 +67,29 @@ class User extends Authenticatable
     public function purchases()
     {
         return $this->hasMany(Purchase::class);
+    }
+
+    /**
+     * Check if the user's phone is verified
+     *
+     * @return bool
+     */
+    public function hasVerifiedPhone(): bool
+    {
+        return !is_null($this->phone_verified_at);
+    }
+    
+    /**
+     * Mark the user's phone as verified
+     *
+     * @return bool
+     */
+    public function markPhoneAsVerified(): bool
+    {
+        return $this->forceFill([
+            'phone_verified_at' => $this->freshTimestamp(),
+            'phone_verification_code' => null,
+            'phone_verification_code_expires_at' => null,
+        ])->save();
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\PurchaseController;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\PhoneVerificationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -188,3 +189,9 @@ Route::get('/setup-roles', function () {
 
 // User credit management
 Route::post('users/{user}/add-credit', [UserController::class, 'addCredit'])->name('users.add_credit')->middleware('auth');
+
+// Phone verification routes
+Route::get('verify-phone', [PhoneVerificationController::class, 'show'])->name('phone.verify')->middleware('auth');
+Route::post('verify-phone', [PhoneVerificationController::class, 'verify'])->name('phone.verify')->middleware('auth');
+Route::post('verify-phone/send', [PhoneVerificationController::class, 'send'])->name('phone.send')->middleware('auth');
+Route::post('verify-phone/update', [PhoneVerificationController::class, 'updatePhone'])->name('phone.update')->middleware('auth');

@@ -69,7 +69,8 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('Qwe!2345'),
                 'admin' => true,
                 'email_verified_at' => now(),
-                'credit' => 0.00
+                'credit' => 0.00,
+                'phone' => '+201234567890', // Adding a phone number
             ]
         );
         $admin->assignRole($adminRole);
@@ -82,7 +83,8 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('Qwe!2345'),
                 'admin' => false,
                 'email_verified_at' => now(),
-                'credit' => 0.00
+                'credit' => 0.00,
+                'phone' => '+201234567891', // Adding a phone number
             ]
         );
         $employee->assignRole($employeeRole);
@@ -95,7 +97,8 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('Qwe!2345'),
                 'admin' => false,
                 'email_verified_at' => now(),
-                'credit' => 200.00
+                'credit' => 200.00,
+                'phone' => '+201234567892', // Adding a phone number
             ]
         );
         $customer->assignRole($customerRole);
@@ -140,5 +143,8 @@ class DatabaseSeeder extends Seeder
                 $productData
             );
         }
+        
+        // Call the question seeder
+        $this->call(QuestionSeeder::class);
     }
 }

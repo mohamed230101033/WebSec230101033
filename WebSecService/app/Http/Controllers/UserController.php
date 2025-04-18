@@ -18,6 +18,7 @@ use App\Mail\VerificationEmail;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Models\ActivityLog;
 
 class UserController extends Controller
 {
@@ -174,14 +175,27 @@ class UserController extends Controller
     public function doLogin(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'login_id' => 'required|string', // Changed from 'email' to 'login_id' for both email and phone login
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // First, try to find a user by email
+        $user = User::where('email', $request->login_id)->first();
+        
+        // If no user found by email, try to find by phone number
+        if (!$user) {
+            $phone = $request->login_id;
+            // Format phone number if needed
+            if (substr($phone, 0, 1) !== '+') {
+                $phone = '+' . $phone;
+            }
+            $user = User::where('phone', $phone)->first();
+        }
 
         if (!$user) {
-            return redirect()->back()->withInput($request->input())->withErrors('Invalid login information.');
+            return redirect()->back()
+                ->withInput($request->only('login_id'))
+                ->withErrors('Invalid login information.');
         }
 
         // First check if email is verified for non-temporary password login
@@ -195,7 +209,7 @@ class UserController extends Controller
             
             // Redirect with a helpful message
             return redirect()->route('login')
-                ->withInput($request->only('email'))
+                ->withInput($request->only('login_id'))
                 ->with('success', 'A new verification email has been sent to your email address. Please check your inbox and verify your email before logging in.');
         }
 
@@ -227,7 +241,7 @@ class UserController extends Controller
         }
 
         // Regular login with permanent password
-        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+        if (Auth::attempt(['email' => $user->email, 'password' => $request->password])) {
             // Check if email is verified before allowing login
             if(!Auth::user()->email_verified_at) {
                 Auth::logout(); // Log them out
@@ -236,6 +250,13 @@ class UserController extends Controller
                 $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
                 return redirect()->route('verify', ['token' => $token]);
             }
+            
+            // Check if phone verification is needed (only for phone login)
+            if ($request->login_id == $user->phone && !$user->hasVerifiedPhone()) {
+                return redirect()->route('phone.verify')
+                    ->with('warning', 'Please verify your phone number to complete the login process.');
+            }
+            
             return redirect("/");
         }
 
@@ -391,33 +412,36 @@ class UserController extends Controller
     }
 
     /**
-     * Add credit to a user account
+     * Add credit to user account
      */
-    public function addCredit(Request $request, User $user)
+    public function addCredit(Request $request)
     {
-        // Verify that the current user has permission to manage customer credit
-        if (!auth()->user()->hasPermissionTo('manage_customer_credit')) {
-            abort(403, 'You do not have permission to manage user credits.');
+        // Check if current user has permission to add credit
+        if (!auth()->user()->can('add_credit')) {
+            return back()->with('error', 'You do not have permission to add credit');
         }
 
-        $request->validate([
+        // Validate request
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
             'amount' => 'required|numeric|min:0.01',
         ]);
 
-        // Add credit to the user's account
-        $user->credit = $user->credit + $request->amount;
+        // Find the user
+        $user = User::findOrFail($validated['user_id']);
+
+        // Add credit to user account
+        $user->credit += $validated['amount'];
         $user->save();
 
         // Log the credit addition
-        Log::info('Credit added to user account', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'amount' => $request->amount,
-            'new_balance' => $user->credit,
-            'added_by' => auth()->user()->id,
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'add_credit',
+            'description' => 'Added $' . number_format($validated['amount'], 2) . ' credit to ' . $user->name,
+            'ip_address' => $request->ip(),
         ]);
 
-        return redirect()->route('users.index')
-            ->with('success', "Successfully added {$request->amount} credits to {$user->name}'s account. New balance: {$user->credit}");
+        return redirect()->route('users.index')->with('success', 'Credit added successfully');
     }
 }
