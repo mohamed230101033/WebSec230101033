@@ -56,11 +56,10 @@ class SMSService
                 $to,
                 [
                     'from' => $this->twilioFrom,
-                    'body' => "$greeting 👋 Your WebSecService verification code is: $code. This code will expire in 10 minutes. Thank you for verifying your phone number with us."
+                    'body' => "$greeting 👋 Your WebSecService verification code is: $code. This code will expire in 10 minutes."
                 ]
             );
             
-            Log::info('SMS sent successfully', ['to' => $to, 'sid' => $message->sid]);
             return true;
             
         } catch (\Exception $e) {
@@ -79,4 +78,15 @@ class SMSService
     {
         return (string) random_int(pow(10, $length - 1), pow(10, $length) - 1);
     }
+    
+    /**
+     * Check if Twilio is properly configured
+     * 
+     * @return bool
+     */
+    public function isConfigured(): bool
+    {
+        return $this->twilioClient !== null && !empty($this->twilioFrom);
+    }
 } 
+ 

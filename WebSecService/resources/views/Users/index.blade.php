@@ -164,34 +164,67 @@
 </div>
 
 <!-- Add Credit Modal -->
-<div class="modal fade" id="addCreditModal" tabindex="-1" aria-labelledby="addCreditModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addCreditModalLabel">Add Credit to User</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="modal fade" id="addCreditModal" tabindex="-1" aria-labelledby="addCreditModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-gradient-primary text-white py-3">
+                <h5 class="modal-title" id="addCreditModalLabel">
+                    <i class="bi bi-cash-coin me-2"></i>Add Credit to Customer
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('users.addCredit') }}" method="POST">
+            <form action="{{ url('users/0/add-credit') }}" method="POST" id="addCreditForm">
                 @csrf
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <input type="hidden" name="user_id" id="creditUserId">
                     
-                    <div class="mb-3">
-                        <label class="form-label">User</label>
-                        <input type="text" class="form-control" id="creditUserName" readonly>
+                    <!-- Customer Info Card -->
+                    <div class="card bg-light border-0 shadow-sm mb-4">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="customer-avatar me-3 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-person-fill fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0" id="creditUserNameDisplay">Customer Name</h6>
+                                    <input type="text" class="form-control d-none" id="creditUserName" readonly>
+                                    <small class="text-muted" id="creditUserIdDisplay">ID: #0000</small>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted d-block">Current Balance</small>
+                                    <span class="fw-bold text-success fs-5" id="userCurrentBalance">$0.00</span>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block text-end">After Transaction</small>
+                                    <span class="fw-bold text-primary fs-5" id="afterTransactionAmount">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="amount" class="form-label">Amount</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" step="0.01" min="0.01" class="form-control" id="amount" name="amount" required>
+                    <!-- Amount Input -->
+                    <div class="mb-4">
+                        <label for="amount" class="form-label fw-semibold">Amount to Add</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-currency-dollar text-primary"></i></span>
+                            <input type="number" step="0.01" min="0.01" class="form-control border-start-0 shadow-none ps-0" 
+                                   id="amount" name="amount" required placeholder="0.00">
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>Enter the amount you want to add to the customer's account
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Credit</button>
+                <div class="modal-footer d-flex justify-content-between bg-light py-3">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                        <i class="bi bi-check-circle me-2"></i>Confirm Transaction
+                    </button>
                 </div>
             </form>
         </div>
@@ -291,6 +324,35 @@
 .search-box input {
     padding-left: 35px;
 }
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd, #0043a8);
+}
+
+.rounded-4 {
+    border-radius: 0.5rem;
+}
+
+.customer-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+}
+
+.modal-content {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 
 <script>
@@ -311,19 +373,40 @@ document.addEventListener('DOMContentLoaded', function() {
             var userCredit = button.closest('tr').querySelector('td:nth-child(5) .text-success')?.textContent || '$0.00'
             
             var creditUserName = document.getElementById('creditUserName')
+            var creditUserNameDisplay = document.getElementById('creditUserNameDisplay')
+            var creditUserIdDisplay = document.getElementById('creditUserIdDisplay')
             var creditUserId = document.getElementById('creditUserId')
             var userCurrentBalance = document.getElementById('userCurrentBalance')
+            var amountInput = document.getElementById('amount')
+            var afterTransactionAmount = document.getElementById('afterTransactionAmount')
             
-            creditUserName.textContent = userName
+            // Debug to console
+            console.log('User ID:', userId)
+            console.log('User Name:', userName)
+            console.log('User Credit:', userCredit)
+            
+            // Set values
+            creditUserName.value = userName
+            creditUserNameDisplay.textContent = userName
+            creditUserIdDisplay.textContent = 'ID: #' + userId
             creditUserId.value = userId
             userCurrentBalance.textContent = userCredit
+            afterTransactionAmount.textContent = userCredit
+            
+            // Calculate after transaction amount when amount changes
+            amountInput.addEventListener('input', function() {
+                var currentCredit = parseFloat(userCredit.replace(/[^0-9.-]+/g, '')) || 0
+                var addAmount = parseFloat(this.value) || 0
+                var newAmount = currentCredit + addAmount
+                afterTransactionAmount.textContent = '$' + newAmount.toFixed(2)
+            })
             
             // Focus on amount input
             setTimeout(function() {
-                document.getElementById('amount').focus()
+                amountInput.focus()
             }, 500)
             
-            // Update form action with correct user ID using the named route
+            // Update form action with correct user ID
             document.getElementById('addCreditForm').action = '{{ url("users") }}/' + userId + '/add-credit';
         })
     }

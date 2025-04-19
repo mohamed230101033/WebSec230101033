@@ -18,7 +18,6 @@ use App\Mail\VerificationEmail;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-use App\Models\ActivityLog;
 
 class UserController extends Controller
 {
@@ -417,7 +416,7 @@ class UserController extends Controller
     public function addCredit(Request $request)
     {
         // Check if current user has permission to add credit
-        if (!auth()->user()->can('add_credit')) {
+        if (!auth()->user()->can('manage_customer_credit')) {
             return back()->with('error', 'You do not have permission to add credit');
         }
 
@@ -434,8 +433,8 @@ class UserController extends Controller
         $user->credit += $validated['amount'];
         $user->save();
 
-        // Log the credit addition
-        ActivityLog::create([
+        // Log the credit addition using Laravel's built-in logging
+        Log::info('Credit added', [
             'user_id' => auth()->id(),
             'action' => 'add_credit',
             'description' => 'Added $' . number_format($validated['amount'], 2) . ' credit to ' . $user->name,

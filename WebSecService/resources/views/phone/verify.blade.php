@@ -110,7 +110,13 @@
                                 <!-- Send code button -->
                                 <form method="POST" action="{{ route('phone.send') }}" class="mt-4">
                                     @csrf
-                                    <p class="mb-3">Click the button below to send a verification code to your phone.</p>
+                                    <div class="text-center mb-4">
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            You need to send a verification code to your phone before you can verify it.
+                                        </div>
+                                        <p>Click the button below to send a verification code to <strong>{{ $phoneNumber }}</strong>.</p>
+                                    </div>
                                     <button type="submit" class="btn btn-primary w-100">
                                         <i class="bi bi-send me-2"></i> Send Verification Code
                                     </button>
@@ -124,3 +130,4 @@
     </div>
 </div>
 @endsection 
+ 

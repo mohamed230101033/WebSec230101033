@@ -11,7 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //
+        Schema::table('users', function (Blueprint $table) {
+            // Make phone column unique and nullable
+            $table->string('phone')->unique()->nullable()->change();
+            
+            // Add new columns for phone verification
+            $table->timestamp('phone_verified_at')->nullable()->after('email_verified_at');
+            $table->string('phone_verification_code', 6)->nullable()->after('phone');
+            $table->timestamp('phone_verification_code_expires_at')->nullable()->after('phone_verification_code');
+        });
     }
 
     /**

@@ -30,10 +30,14 @@ class PhoneVerificationController extends Controller
             return redirect('/')->with('success', 'Your phone number is already verified.');
         }
         
+        // Check if user has a verification code already
+        $hasCode = !is_null($user->phone_verification_code) && 
+                   !is_null($user->phone_verification_code_expires_at) && 
+                   now()->lessThan($user->phone_verification_code_expires_at);
+        
         return view('phone.verify', [
             'phoneNumber' => $user->phone,
-            // Always show verification form
-            'hasCode' => true,
+            'hasCode' => $hasCode,
         ]);
     }
     
@@ -43,23 +47,19 @@ class PhoneVerificationController extends Controller
     public function send(Request $request)
     {
         $user = Auth::user();
-        Log::info('Phone verification code requested', ['user_id' => $user->id, 'phone' => $user->phone]);
         
         // If phone already verified, redirect to home
         if ($user->hasVerifiedPhone()) {
-            Log::info('Phone already verified, redirecting', ['user_id' => $user->id]);
             return redirect('/')->with('success', 'Your phone number is already verified.');
         }
         
         // Validate phone number exists in profile
         if (empty($user->phone)) {
-            Log::warning('Phone number missing, redirecting to profile', ['user_id' => $user->id]);
             return redirect()->route('profile')->with('error', 'Please add a phone number to your profile first.');
         }
         
         // Invalidate any existing code
         if (!is_null($user->phone_verification_code)) {
-            Log::info('Invalidating existing verification code', ['user_id' => $user->id]);
             $user->phone_verification_code = null;
             $user->phone_verification_code_expires_at = null;
             $user->save();
@@ -67,7 +67,6 @@ class PhoneVerificationController extends Controller
         
         // Generate a verification code
         $code = $this->smsService->generateVerificationCode();
-        Log::info('New verification code generated', ['user_id' => $user->id, 'code' => $code]);
         
         // Save the code and set expiry time (10 minutes)
         $user->phone_verification_code = $code;
@@ -78,14 +77,12 @@ class PhoneVerificationController extends Controller
         $success = $this->smsService->sendVerificationCode($user->phone, $code, $user->name);
         
         if ($success) {
-            Log::info('SMS sent successfully', ['user_id' => $user->id]);
             return redirect()->route('phone.verify')
-                ->with('success', 'A new verification code has been sent to your phone number.');
+                ->with('success', 'A verification code has been sent to your phone number.');
         } else {
-            Log::warning('SMS sending failed, showing code in UI', ['user_id' => $user->id]);
-            // If SMS failed, still allow verification for this exercise (in real world, you might want to retry)
+            // If SMS failed, still show code for testing purposes
             return redirect()->route('phone.verify')
-                ->with('warning', 'We were unable to send an SMS at this time. For testing purposes, your WebSecService verification code is: ' . $code . '. This code will expire in 10 minutes.');
+                ->with('warning', 'We were unable to send an SMS at this time. For testing purposes, your verification code is: ' . $code . '. This code will expire in 10 minutes.');
         }
     }
     
@@ -128,38 +125,45 @@ class PhoneVerificationController extends Controller
      */
     public function updatePhone(Request $request)
     {
-        Log::info('Phone update requested', [
-            'user_id' => Auth::id(),
-            'old_phone' => Auth::user()->phone,
-            'new_phone' => $request->phone,
-            'request_data' => $request->all()
-        ]);
-        
         $request->validate([
             'phone' => 'required|string|min:10|unique:users,phone,' . Auth::id(),
         ]);
         
         $user = Auth::user();
         
+        // Format phone number to include + if not present
+        $phone = $request->phone;
+        if (substr($phone, 0, 1) !== '+') {
+            $phone = '+' . $phone;
+        }
+        
         // If phone number is changing, remove verification
-        if ($user->phone != $request->phone) {
-            Log::info('Updating phone number', [
-                'user_id' => $user->id,
-                'old_phone' => $user->phone,
-                'new_phone' => $request->phone
-            ]);
-            
-            $user->phone = $request->phone;
+        if ($user->phone != $phone) {
+            $user->phone = $phone;
             $user->phone_verified_at = null;
             $user->phone_verification_code = null;
             $user->phone_verification_code_expires_at = null;
             $user->save();
             
-            return redirect()->route('phone.verify')
-                ->with('success', 'Phone number updated. Please verify your new number.');
+            // Generate a verification code immediately
+            $code = $this->smsService->generateVerificationCode();
+            $user->phone_verification_code = $code;
+            $user->phone_verification_code_expires_at = now()->addMinutes(10);
+            $user->save();
+            
+            // Try to send the code
+            $success = $this->smsService->sendVerificationCode($user->phone, $code, $user->name);
+            
+            if ($success) {
+                return redirect()->route('phone.verify')
+                    ->with('success', 'Phone number updated. A verification code has been sent to your new number.');
+            } else {
+                return redirect()->route('phone.verify')
+                    ->with('warning', 'Phone number updated. We were unable to send an SMS at this time. For testing purposes, your verification code is: ' . $code);
+            }
         }
         
-        Log::info('Phone number unchanged', ['user_id' => $user->id, 'phone' => $user->phone]);
-        return back()->with('info', 'Phone number unchanged.');
+        return redirect()->route('phone.verify')->with('info', 'Phone number unchanged.');
     }
 } 
+ 
