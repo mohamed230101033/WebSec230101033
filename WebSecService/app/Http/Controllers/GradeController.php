@@ -15,7 +15,7 @@ class GradeController extends Controller
     private function getGPAValue($grade)
     {
         $gradeMap = [
-            'A+' => 4.0,
+            'A+' => 4.3,
             'A' => 4.0,
             'A-' => 3.7,
             'B+' => 3.3,

@@ -32,6 +32,9 @@ class User extends Authenticatable
         'phone_verified_at',
         'phone_verification_code',
         'phone_verification_code_expires_at',
+        'google_id', // Added for Google OAuth
+        'google_token', // Added for Google OAuth
+        'google_refresh_token', // Added for Google OAuth
     ];
 
     /**

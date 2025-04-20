@@ -195,3 +195,5 @@ Route::post('verify-phone', [PhoneVerificationController::class, 'verify'])->nam
 Route::post('verify-phone/send', [PhoneVerificationController::class, 'send'])->name('phone.send')->middleware('auth');
 Route::post('verify-phone/update', [PhoneVerificationController::class, 'updatePhone'])->name('phone.update')->middleware('auth');
 
+Route::get('/auth/google',[UserController::class, 'redirectToGoogle'])->name('login_with_google');
+Route::get('/auth/google/callback', [UserController::class, 'handleGoogleCallback']);

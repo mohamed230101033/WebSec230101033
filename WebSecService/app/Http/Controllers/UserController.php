@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use App\Mail\VerificationEmail;
 use Carbon\Carbon;
+use Laravel\Socialite\Facades\Socialite;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -40,13 +41,13 @@ class UserController extends Controller
     {
         $roles = \Spatie\Permission\Models\Role::all();
         $permissions = \Spatie\Permission\Models\Permission::all();
-        
+
         // Get permissions for each role
         $rolePermissions = [];
         foreach ($roles as $role) {
             $rolePermissions[$role->id] = $role->permissions->pluck('id')->toArray();
         }
-        
+
         return view('Users.create', compact('roles', 'permissions', 'rolePermissions'));
     }
 
@@ -73,11 +74,11 @@ class UserController extends Controller
 
         // Get the permissions that already come with the role
         $rolePermissions = $role->permissions->pluck('id')->toArray();
-        
+
         // Assign additional permissions (exclude role permissions to avoid duplication)
         if ($request->has('permissions')) {
             $additionalPermissions = array_diff($request->permissions, $rolePermissions);
-            
+
             foreach ($additionalPermissions as $permissionId) {
                 $permission = \Spatie\Permission\Models\Permission::findById($permissionId);
                 $user->givePermissionTo($permission);
@@ -110,13 +111,13 @@ class UserController extends Controller
 
         // Get the permissions that already come with the role
         $rolePermissions = $role->permissions->pluck('id')->toArray();
-        
+
         // Determine additional permissions (only those not included in the role)
         $permissionsToSync = [];
         if ($request->has('permissions')) {
             $permissionsToSync = array_diff($request->permissions, $rolePermissions);
         }
-        
+
         // Sync only the additional permissions
         $user->syncPermissions($permissionsToSync);
 
@@ -160,8 +161,8 @@ class UserController extends Controller
         $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
         $link = route("verify", ['token' => $token]);
         Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
-       
-       
+
+
 
         return redirect("/")->with('success', 'Registration successful. Please log in.');
     }
@@ -180,7 +181,7 @@ class UserController extends Controller
 
         // First, try to find a user by email
         $user = User::where('email', $request->login_id)->first();
-        
+
         // If no user found by email, try to find by phone number
         if (!$user) {
             $phone = $request->login_id;
@@ -201,11 +202,11 @@ class UserController extends Controller
         if (!$user->email_verified_at && Hash::check($request->password, $user->password)) {
             // Generate verification token
             $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
-            
+
             // Send a new verification email
             $link = route("verify", ['token' => $token]);
             Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
-            
+
             // Redirect with a helpful message
             return redirect()->route('login')
                 ->withInput($request->only('login_id'))
@@ -222,14 +223,14 @@ class UserController extends Controller
             $user->save();
 
             // Check if the email is verified
-            if(!$user->email_verified_at) {
+            if (!$user->email_verified_at) {
                 // Generate verification token
                 $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
-                
+
                 // Send verification email
                 $link = route("verify", ['token' => $token]);
                 Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
-                
+
                 return redirect()->route('verify', ['token' => $token]);
             }
 
@@ -242,27 +243,28 @@ class UserController extends Controller
         // Regular login with permanent password
         if (Auth::attempt(['email' => $user->email, 'password' => $request->password])) {
             // Check if email is verified before allowing login
-            if(!Auth::user()->email_verified_at) {
+            if (!Auth::user()->email_verified_at) {
                 Auth::logout(); // Log them out
                 // This shouldn't actually happen since we check earlier, but just in case
                 // Generate verification token
                 $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
                 return redirect()->route('verify', ['token' => $token]);
             }
-            
+
             // Check if phone verification is needed (only for phone login)
             if ($request->login_id == $user->phone && !$user->hasVerifiedPhone()) {
                 return redirect()->route('phone.verify')
                     ->with('warning', 'Please verify your phone number to complete the login process.');
             }
-            
+
             return redirect("/");
         }
 
         return redirect()->back()->withInput($request->input())->withErrors('Invalid login information.');
     }
 
-    public function verify(Request $request) {
+    public function verify(Request $request)
+    {
         if (!$request->has('token')) {
             // If no token is provided, send a new verification email
             if (Auth::check()) {
@@ -270,7 +272,7 @@ class UserController extends Controller
                 $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
                 $link = route("verify", ['token' => $token]);
                 Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
-                
+
                 return redirect()->route('login')
                     ->with('success', 'A verification email has been sent to your email address. Please check your inbox (and spam folder) and click on the verification link.');
             } else {
@@ -281,12 +283,13 @@ class UserController extends Controller
 
         $decryptedData = json_decode(Crypt::decryptString($request->token), true);
         $user = User::find($decryptedData['id']);
-        if(!$user) abort(401);
+        if (!$user)
+            abort(401);
         $user->email_verified_at = Carbon::now();
         $user->save();
         return view('Users.verified', compact('user'));
     }
-       
+
     public function doLogout(Request $request)
     {
         Auth::logout();
@@ -323,23 +326,23 @@ class UserController extends Controller
         $roles = \Spatie\Permission\Models\Role::all();
         $permissions = \Spatie\Permission\Models\Permission::all();
         $userPermissions = $user->permissions->pluck('id')->toArray();
-        
+
         // Get permissions for each role
         $rolePermissions = [];
         foreach ($roles as $role) {
             $rolePermissions[$role->id] = $role->permissions->pluck('id')->toArray();
         }
-        
+
         // Get the user's current role
         $currentRoleId = $user->roles->first()->id ?? null;
-        
+
         // Determine direct permissions (those not inherited from the role)
         $directPermissions = $userPermissions;
         if ($currentRoleId) {
             $rolePerms = $rolePermissions[$currentRoleId] ?? [];
             $directPermissions = array_diff($userPermissions, $rolePerms);
         }
-        
+
         return view('Users.edit', compact('user', 'roles', 'permissions', 'userPermissions', 'rolePermissions', 'directPermissions', 'currentRoleId'));
     }
 
@@ -443,4 +446,74 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', 'Credit added successfully');
     }
+
+    public function redirectToGoogle()
+    {
+        // Log the redirect URI that Socialite will use
+        $redirectUrl = config('services.google.redirect');
+        Log::info('Google redirect URL', ['url' => $redirectUrl]);
+        
+        // Use a hardcoded redirect URL to ensure it matches exactly what's in Google Cloud Console
+        return Socialite::driver('google')
+            ->redirectUrl('http://127.0.0.1:8000/auth/google/callback')
+            ->redirect();
+    }
+
+    public function handleGoogleCallback()
+    {
+        try {
+            $googleUser = Socialite::driver('google')
+                ->redirectUrl('http://127.0.0.1:8000/auth/google/callback')
+                ->user();
+            
+            // First check if a user with this email already exists
+            $existingUser = User::where('email', $googleUser->email)->first();
+            
+            if ($existingUser) {
+                // For existing users, check if their email is verified
+                if (!$existingUser->email_verified_at) {
+                    // If user exists but email is not verified, mark it as verified now
+                    // (since we've now verified it via Google)
+                    $existingUser->email_verified_at = now();
+                }
+                
+                // If the user exists but doesn't have a google_id yet, update it
+                if (empty($existingUser->google_id)) {
+                    $existingUser->google_id = $googleUser->id;
+                    $existingUser->google_token = $googleUser->token;
+                    $existingUser->google_refresh_token = $googleUser->refreshToken;
+                }
+                
+                $existingUser->save();
+                Auth::login($existingUser);
+                return redirect('/');
+            }
+            
+            // If no existing user, create a new one
+            $newUser = new User();
+            $newUser->name = $googleUser->name;
+            $newUser->email = $googleUser->email;
+            $newUser->google_id = $googleUser->id;
+            $newUser->google_token = $googleUser->token;
+            $newUser->google_refresh_token = $googleUser->refreshToken;
+            $newUser->password = Hash::make(Str::random(16)); // Generate random password
+            $newUser->email_verified_at = now(); // Consider new Google users' emails verified
+            $newUser->save();
+            
+            Auth::login($newUser);
+            return redirect('/');
+        } catch (\Exception $e) {
+            // Log the detailed error
+            Log::error('Google login failed', [
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            return redirect('/login')->with('error', 'Google login failed: ' . $e->getMessage()); // More detailed error message
+        }
+    }
+
+
 }

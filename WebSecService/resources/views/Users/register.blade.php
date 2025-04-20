@@ -45,7 +45,7 @@
                         <label for="security_question" class="form-label">Security Question:</label>
                         <select class="form-control" name="security_question" required>
                             <option value="" disabled selected>Select a security question</option>
-                            <option value="What is your mother’s maiden name?" {{ old('security_question') == "What is your mother’s maiden name?" ? 'selected' : '' }}>What is your mother’s maiden name?</option>
+                            <option value="What is your mother's maiden name?" {{ old('security_question') == "What is your mother's maiden name?" ? 'selected' : '' }}>What is your mother's maiden name?</option>
                             <option value="What was the name of your first pet?" {{ old('security_question') == "What was the name of your first pet?" ? 'selected' : '' }}>What was the name of your first pet?</option>
                             <option value="What city were you born in?" {{ old('security_question') == "What city were you born in?" ? 'selected' : '' }}>What city were you born in?</option>
                             <option value="What was your childhood nickname?" {{ old('security_question') == "What was your childhood nickname?" ? 'selected' : '' }}>What was your childhood nickname?</option>
