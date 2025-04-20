@@ -4,25 +4,25 @@
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-header bg-white py-3">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white py-3 rounded-top-4">
                         <h4 class="mb-0"><i class="bi bi-lock me-2 text-primary"></i> Login to Your Account</h4>
                     </div>
                     <div class="card-body p-4">
                         @if(session('success'))
-                            <div class="alert alert-success">
+                            <div class="alert alert-success rounded-3">
                                 {{ session('success') }}
                             </div>
                         @endif
 
                         @if(session('error'))
-                            <div class="alert alert-danger">
+                            <div class="alert alert-danger rounded-3">
                                 {{ session('error') }}
                             </div>
                         @endif
 
                         @if($errors->any())
-                            <div class="alert alert-danger">
+                            <div class="alert alert-danger rounded-3">
                                 @foreach($errors->all() as $error)
                                     <p class="mb-0">{{ $error }}</p>
                                 @endforeach
@@ -34,8 +34,8 @@
                             <div class="mb-3">
                                 <label for="login_id" class="form-label">Email or Phone Number</label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                                    <input type="text" class="form-control" id="login_id" name="login_id"
+                                    <span class="input-group-text rounded-start-3"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control rounded-end-3" id="login_id" name="login_id"
                                         placeholder="Email or Phone Number" value="{{ old('login_id') }}" required>
                                 </div>
                                 <div class="form-text">Enter your email address or phone number (with country code)</div>
@@ -43,8 +43,8 @@
                             <div class="mb-3">
                                 <label for="password" class="form-label">Password</label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-key"></i></span>
-                                    <input type="password" class="form-control" id="password" name="password"
+                                    <span class="input-group-text rounded-start-3"><i class="bi bi-key"></i></span>
+                                    <input type="password" class="form-control rounded-end-3" id="password" name="password"
                                         placeholder="Password" required>
                                 </div>
                             </div>
@@ -53,7 +53,7 @@
                                     password?</a>
                             </div>
                             <div class="d-grid gap-2 mb-4">
-                                <button type="submit" class="btn btn-primary py-2">
+                                <button type="submit" class="btn btn-primary py-2 rounded-3">
                                     <i class="bi bi-box-arrow-in-right me-2"></i> Login
                                 </button>
                             </div>
@@ -66,9 +66,9 @@
                             </div>
 
                             <div class="d-flex justify-content-center mb-4">
-                                <a href="/auth/google" class="btn btn-light d-flex align-items-center justify-content-center border py-2 px-3 w-100" style="max-width: 250px; background-color: white;">
+                                <a href="/auth/google" class="btn btn-light d-flex align-items-center justify-content-center border py-2 px-3 w-100 rounded-3" style="max-width: 280px; background-color: white;">
                                     <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" style="height: 24px; margin-right: 10px;">
-                                    <span style="font-family: 'Roboto', sans-serif; font-weight: 500; color: #757575;">Sign in with Google</span>
+                                    <span style="font-family: 'Roboto', sans-serif; font-weight: 500; color: #757575;">Continue with Google</span>
                                 </a>
                             </div>
                         </form>
@@ -80,7 +80,7 @@
                     </div>
                 </div>
 
-                <div class="card border-0 shadow-sm rounded-3 mt-4">
+                <div class="card border-0 shadow-sm rounded-4 mt-4">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center">
                             <div class="me-3 text-primary">
