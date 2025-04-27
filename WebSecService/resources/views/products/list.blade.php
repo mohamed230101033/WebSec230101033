@@ -67,6 +67,16 @@
         </div>
     </div>
 
+<!-- To Allow Cross Site Scripting -->
+@if(!empty(request()->input('keywords')))
+    <div class="card mt-2">
+        <div class="card-body">
+            Search Results: <span>{!! request()->keywords !!}</span>
+        </div>
+    </div>
+@endif
+
+
     <!-- Products Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         @foreach($products as $product)

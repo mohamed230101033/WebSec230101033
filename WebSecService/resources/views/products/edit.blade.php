@@ -40,6 +40,7 @@
                             <label for="description" class="form-label">Description</label>
                             <textarea class="form-control" id="description" name="description" rows="5">{{ old('description', $product->description) }}</textarea>
                         </div>
+                        
                         <div class="mb-3">
                             <label for="photo" class="form-label">Product Photo</label>
                             <input type="file" class="form-control" id="photo" name="photo" accept="image/jpeg,image/png,image/gif,image/webp">

