@@ -26,29 +26,30 @@
                     <div class="col-md-2">
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" step="0.01" min="0" class="form-control" name="min_price" placeholder="Min Price" value="{{ request()->min_price }}">
+                            <input type="number" step="0.01" class="form-control" name="min_price" placeholder="Min Price" value="{{ request()->min_price }}">
                         </div>
                     </div>
                     
                     <div class="col-md-2">
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" step="0.01" min="0" class="form-control" name="max_price" placeholder="Max Price" value="{{ request()->max_price }}">
+                            <input type="number" step="0.01" class="form-control" name="max_price" placeholder="Max Price" value="{{ request()->max_price }}">
                         </div>
                     </div>
                     
                     <div class="col-md-2">
                         <select name="order_by" class="form-select">
-                            <option value="">Order By</option>
-                            <option value="name" {{ request()->order_by == "name" ? "selected" : "" }}>Name</option>
-                            <option value="price" {{ request()->order_by == "price" ? "selected" : "" }}>Price</option>
+                            <option value="" {{ request()->order_by==""?"selected":"" }} disabled>Order By</option>
+                            <option value="name" {{ request()->order_by=="name"?"selected":"" }}>Name</option>
+                            <option value="price" {{ request()->order_by=="price"?"selected":"" }}>Price</option>
                         </select>
                     </div>
                     
                     <div class="col-md-2">
                         <select name="order_direction" class="form-select">
-                            <option value="ASC" {{ request()->order_direction != "DESC" ? "selected" : "" }}>Ascending</option>
-                            <option value="DESC" {{ request()->order_direction == "DESC" ? "selected" : "" }}>Descending</option>
+                            <option value="" {{ request()->order_direction==""?"selected":"" }} disabled>Direction</option>
+                            <option value="ASC" {{ request()->order_direction=="ASC"?"selected":"" }}>Ascending</option>
+                            <option value="DESC" {{ request()->order_direction=="DESC"?"selected":"" }}>Descending</option>
                         </select>
                     </div>
                     

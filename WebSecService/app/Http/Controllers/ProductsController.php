@@ -15,7 +15,6 @@ class ProductsController extends Controller
 
     public function list(Request $request)
     {
-        // Initialize query
         $query = Product::select("products.*");
         
         // Only show non-held products to customers
@@ -23,33 +22,10 @@ class ProductsController extends Controller
             $query->where('hold', false);
         }
         
-        // Apply search filters
-        if ($request->filled('keywords')) {
-            $query->where("name", "like", "%" . trim($request->keywords) . "%");
-        }
-        
-        // Apply price filters with proper numeric comparison
-        if ($request->filled('min_price')) {
-            $minPrice = (float) $request->min_price;
-            $query->whereRaw('CAST(price AS DECIMAL(10,2)) >= ?', [$minPrice]);
-        }
-        
-        if ($request->filled('max_price')) {
-            $maxPrice = (float) $request->max_price;
-            $query->whereRaw('CAST(price AS DECIMAL(10,2)) <= ?', [$maxPrice]);
-        }
-        
-        // Apply ordering
-        if ($request->filled('order_by') && in_array($request->order_by, ['name', 'price'])) {
-            $direction = $request->filled('order_direction') && 
-                         strtoupper($request->order_direction) === 'DESC' ? 'DESC' : 'ASC';
-            
-            $query->orderBy($request->order_by, $direction);
-        } else {
-            // Default ordering
-            $query->orderBy('name', 'ASC');
-        }
-        
+        $query->when($request->keywords, fn($q) => $q->where("name", "like", "%$request->keywords%"));
+        $query->when($request->min_price, fn($q) => $q->where("price", ">=", $request->min_price));
+        $query->when($request->max_price, fn($q) => $q->where("price", "<=", $request->max_price));
+        $query->when($request->order_by, fn($q) => $q->orderBy($request->order_by, $request->order_direction ?? "ASC"));
         $products = $query->get();
         return view("products.list", compact('products'));
     }
