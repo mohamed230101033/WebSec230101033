@@ -200,20 +200,20 @@ Route::get('/auth/google/callback', [UserController::class, 'handleGoogleCallbac
 
 
 // To Drop A Table (Vulerability - SQL Injection)
-Route::get('/sqli', function(Request $request){
-$table = $request->query('table');
-DB::unprepared("Drop Table $table");
-return redirect('/');
-});
+// Route::get('/sqli', function(Request $request){
+// $table = $request->query('table');
+// DB::unprepared("Drop Table $table");
+// return redirect('/');
+// });
 
 // to send data to another domain
-Route::get('/collect', function(Request $request){
-    $name = $request->query('name');
-    $credits = $request->query('credits');
+// Route::get('/collect', function(Request $request){
+//     $name = $request->query('name');
+//     $credits = $request->query('credits');
 
-    return response("Data Collected",200)
-    ->header('Access-Control-Allow-Origin', '*')
-    ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
-    ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
-});
+//     return response("Data Collected",200)
+//     ->header('Access-Control-Allow-Origin', '*')
+//     ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
+//     ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+// });
     

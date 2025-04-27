@@ -68,13 +68,13 @@
     </div>
 
 <!-- To Allow Cross Site Scripting -->
-@if(!empty(request()->input('keywords')))
+<!-- @if(!empty(request()->input('keywords')))
     <div class="card mt-2">
         <div class="card-body">
             Search Results: <span>{!! request()->keywords !!}</span>
         </div>
     </div>
-@endif
+@endif -->
 
 
     <!-- Products Grid -->
