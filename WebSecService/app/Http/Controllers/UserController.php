@@ -453,17 +453,25 @@ class UserController extends Controller
         $redirectUrl = config('services.google.redirect');
         Log::info('Google redirect URL', ['url' => $redirectUrl]);
         
-        // Use a hardcoded redirect URL to ensure it matches exactly what's in Google Cloud Console
+        
+        // Redirect user to Google OAuth page
+        // Note: Using websecservice.localhost.com instead of 127.0.0.1 for redirect URL
         return Socialite::driver('google')
-            ->redirectUrl('http://127.0.0.1:8000/auth/google/callback')
+            ->redirectUrl('http://websecservice.localhost.com/auth/google/callback')
             ->redirect();
-    }
+        }
 
     public function handleGoogleCallback()
     {
         try {
+            /**
+             * Retrieves user information from Google OAuth service.
+             * 
+             * Uses Laravel Socialite with the configured redirect URL for Google authentication.
+             * Note: Updated redirect URL from 127.0.0.1 to websecservice.localhost.com
+             */
             $googleUser = Socialite::driver('google')
-                ->redirectUrl('http://127.0.0.1:8000/auth/google/callback')
+                ->redirectUrl('http://websecservice.localhost.com/auth/google/callback')
                 ->user();
             
             // First check if a user with this email already exists
