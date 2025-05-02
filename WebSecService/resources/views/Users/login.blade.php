@@ -10,22 +10,25 @@
                     </div>
                     <div class="card-body p-4">
                         @if(session('success'))
-                            <div class="alert alert-success rounded-3">
+                            <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
                                 {{ session('success') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         @endif
 
                         @if(session('error'))
-                            <div class="alert alert-danger rounded-3">
+                            <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
                                 {{ session('error') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         @endif
 
                         @if($errors->any())
-                            <div class="alert alert-danger rounded-3">
+                            <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
                                 @foreach($errors->all() as $error)
                                     <p class="mb-0">{{ $error }}</p>
                                 @endforeach
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         @endif
 
@@ -65,10 +68,15 @@
                                 </div>
                             </div>
 
-                            <div class="d-flex justify-content-center mb-4">
-                                <a href="/auth/google" class="btn btn-light d-flex align-items-center justify-content-center border py-2 px-3 w-100 rounded-3" style="max-width: 280px; background-color: white;">
+                            <div class="d-flex flex-column gap-3 mb-4">
+                                <a href="{{ route('login_with_google') }}" class="btn btn-light d-flex align-items-center justify-content-center border py-2 px-3 rounded-3" style="background-color: white;">
                                     <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" style="height: 24px; margin-right: 10px;">
                                     <span style="font-family: 'Roboto', sans-serif; font-weight: 500; color: #757575;">Continue with Google</span>
+                                </a>
+                                
+                                <a href="{{ route('login_with_facebook') }}" class="btn btn-light d-flex align-items-center justify-content-center border py-2 px-3 rounded-3" style="background-color: white;">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Facebook_Logo_%282019%29.png/1024px-Facebook_Logo_%282019%29.png" alt="Facebook logo" style="height: 24px; margin-right: 10px;">
+                                    <span style="font-family: 'Roboto', sans-serif; font-weight: 500; color: #757575;">Continue with Facebook</span>
                                 </a>
                             </div>
                         </form>
@@ -88,7 +96,7 @@
                             </div>
                             <div>
                                 <h5 class="mb-1">Secure Login Options</h5>
-                                <p class="mb-0 text-muted">You can log in using your email, verified phone number, or Google account.</p>
+                                <p class="mb-0 text-muted">You can log in using your email, verified phone number, Google account, or Facebook account.</p>
                             </div>
                         </div>
                     </div>

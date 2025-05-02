@@ -52,7 +52,12 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => 'http://websecservice.localhost.com/auth/google/callback',
-       ],
-       
+    ],
+    
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => 'https://3018-156-193-68-93.ngrok-free.app/auth/facebook/callback',
+    ],
 
 ];

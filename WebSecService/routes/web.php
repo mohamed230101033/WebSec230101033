@@ -195,9 +195,13 @@ Route::post('verify-phone', [PhoneVerificationController::class, 'verify'])->nam
 Route::post('verify-phone/send', [PhoneVerificationController::class, 'send'])->name('phone.send')->middleware('auth');
 Route::post('verify-phone/update', [PhoneVerificationController::class, 'updatePhone'])->name('phone.update')->middleware('auth');
 
+//Google OAuth routes
 Route::get('/auth/google',[UserController::class, 'redirectToGoogle'])->name('login_with_google');
 Route::get('/auth/google/callback', [UserController::class, 'handleGoogleCallback']);
 
+// Facebook OAuth routes
+Route::get('/auth/facebook', [UserController::class, 'redirectToFacebook'])->name('login_with_facebook');
+Route::get('/auth/facebook/callback', [UserController::class, 'handleFacebookCallback']);
 
 // To Drop A Table (Vulerability - SQL Injection)
 // Route::get('/sqli', function(Request $request){
