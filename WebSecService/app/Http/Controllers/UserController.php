@@ -517,19 +517,7 @@ class UserController extends Controller
                 $user->assignRole($customerRole);
             }
             
-<<<<<<< HEAD
             Auth::login($user);
-=======
-            // Only assign Customer role if user has no roles
-            if (!$newUser->roles()->exists()) {
-                $customerRole = Role::where('name', 'Customer')->first();
-                if ($customerRole) {
-                    $newUser->assignRole($customerRole);
-                }
-            }
-            
-            Auth::login($newUser);
->>>>>>> 72e51a0 (Fix: Assign Customer Role for Social Logins Only if No Role Exists)
             return redirect('/');
         } catch (\Exception $e) {
             Log::error('Google login failed', [
@@ -579,19 +567,12 @@ class UserController extends Controller
                         'temp_password_expires_at' => now()->addMinutes(15),
                     ]);
 
-<<<<<<< HEAD
-                    // Create and assign Customer role if it doesn't exist
-                    if (!$user->roles()->exists()) {
-                        $customerRole = Role::firstOrCreate(['name' => 'Customer']);
-                        $user->assignRole($customerRole);
-=======
                     // Only assign Customer role if user has no roles
                     if (!$user->roles()->exists()) {
                         $customerRole = Role::where('name', 'Customer')->first();
                         if ($customerRole) {
                             $user->assignRole($customerRole);
                         }
->>>>>>> 72e51a0 (Fix: Assign Customer Role for Social Logins Only if No Role Exists)
                     }
 
                     // Send email with temporary password
@@ -607,12 +588,6 @@ class UserController extends Controller
                     // Update existing user with Facebook ID
                     $user->facebook_id = $facebookUser->id;
                     $user->save();
-
-                    // Ensure the user has a role
-                    if (!$user->roles()->exists()) {
-                        $customerRole = Role::firstOrCreate(['name' => 'Customer']);
-                        $user->assignRole($customerRole);
-                    }
 
                     // Ensure the user has a role
                     if (!$user->roles()->exists()) {
