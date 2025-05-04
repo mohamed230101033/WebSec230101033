@@ -47,7 +47,7 @@
                             @if($product->photo)
                             <div class="mt-2">
                                 @if(is_file(public_path('images/' . $product->photo)))
-                                <img src="{{ asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail" style="height: 100px;">
+                                <img src="{{ secure_asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail" style="height: 100px;">
                                 @else
                                 <div class="alert alert-warning">
                                     <i class="bi bi-exclamation-triangle me-2"></i>

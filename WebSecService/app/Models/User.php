@@ -95,4 +95,19 @@ class User extends Authenticatable
             'phone_verification_code_expires_at' => null,
         ])->save();
     }
+
+    /**
+     * Get the user's role for display purposes
+     * Will fallback to 'Customer' if no role is assigned
+     *
+     * @return string
+     */
+    public function getDisplayRole(): string
+    {
+        $roleNames = $this->getRoleNames();
+        if ($roleNames->isEmpty()) {
+            return 'Customer';
+        }
+        return $roleNames->first();
+    }
 }

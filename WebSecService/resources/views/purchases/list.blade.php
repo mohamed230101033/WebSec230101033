@@ -115,7 +115,7 @@
                                 <div class="d-flex align-items-center">
                                     @if($purchase->product && $purchase->product->photo && is_file(public_path('images/' . $purchase->product->photo)))
                                     <div class="me-3">
-                                        <img src="{{ asset('images/' . $purchase->product->photo) }}" alt="{{ $purchase->product->name }}" class="rounded-3" style="width: 40px; height: 40px; object-fit: contain;">
+                                        <img src="{{ secure_asset('images/' . $purchase->product->photo) }}" alt="{{ $purchase->product->name }}" class="rounded-3" style="width: 40px; height: 40px; object-fit: contain;">
                                     </div>
                                     @else
                                     <div class="me-3 bg-light rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">

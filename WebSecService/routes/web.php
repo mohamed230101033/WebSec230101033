@@ -9,14 +9,70 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\PurchaseController;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\PhoneVerificationController;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/', function () {
-    return view('welcome');
+// Certificate-based login - modified to be more selective
+Route::get('/', function (Request $request) {
+    // Check if user is explicitly requesting certificate login via query parameter
+    // OR if this is the very first page load (no referer)
+    $useCertLogin = $request->has('cert_login');
+    $isDirectAccess = empty($request->header('referer'));
+    
+    // Get email from certificate
+    $email = emailFromLoginCertificate();
+    
+    // Only attempt certificate login if:
+    // 1. Explicitly requested via cert_login parameter, OR
+    // 2. This is a direct access to the site (no referer) AND no session yet
+    if ($email && ($useCertLogin || ($isDirectAccess && !session()->has('visited_before')))) {
+        $user = User::where('email', $email)->first();
+        
+        if ($user) {
+            // Log the user in explicitly
+            Auth::login($user);
+            
+            // Store a flag in the session indicating certificate-based login
+            session(['cert_login' => true]);
+            
+            // Redirect to clear the cert_login parameter if it was set
+            if ($useCertLogin) {
+                return redirect('/');
+            }
+        }
+    }
+    
+    // Mark that the user has visited the site
+    session(['visited_before' => true]);
+    
+    return view('welcome', [
+        'show_cert_login' => isset($email) && !auth()->check()
+    ]);
 });
+
+// Explicit certificate logout route
+Route::get('/cert-logout', function () {
+    // Clear the session
+    Auth::logout();
+    session()->flush();
+    
+    // Redirect to a page that doesn't perform certificate auth
+    return redirect('/logout-success');
+})->name('cert.logout');
+
+// A page that doesn't try to log in with certificate
+Route::get('/logout-success', function (Request $request) {
+    $email = emailFromLoginCertificate();
+    return view('welcome', [
+        'show_cert_login' => isset($email),
+        'logout_success' => true
+    ]);
+})->name('logout.success');
 
 Route::get('multable/{id?}', function ($id = 1) {
     return view('multable', [
@@ -92,14 +148,14 @@ Route::get('reset-password', [UserController::class, 'showResetPasswordForm'])->
 Route::post('reset-password', [UserController::class, 'resetPassword'])->name('password.update');
 
 // Database cleanup route - temporary
-Route::get('/fix-image-paths', function() {
+Route::get('/fix-image-paths', function () {
     if (!auth()->check() || !auth()->user()->hasRole('Admin')) {
         abort(403, 'Unauthorized');
     }
-    
+
     $fixed = 0;
     $products = \App\Models\Product::all();
-    
+
     foreach ($products as $product) {
         if ($product->photo && !is_file(public_path('images/' . $product->photo))) {
             $product->photo = null;
@@ -107,7 +163,7 @@ Route::get('/fix-image-paths', function() {
             $fixed++;
         }
     }
-    
+
     return redirect()->route('products_list')
         ->with('success', "Fixed $fixed products with missing images. You can now re-upload proper images.");
 })->middleware('auth');
@@ -116,7 +172,7 @@ Route::get('/test-email', function () {
     try {
         Mail::raw('This is a test email from WebSecService.', function ($message) {
             $message->to('mohamedamrr666@gmail.com')
-                    ->subject('Test Email');
+                ->subject('Test Email');
         });
         return 'Test email sent successfully!';
     } catch (\Exception $e) {
@@ -133,9 +189,9 @@ Route::get('/setup-roles', function () {
         $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
         $employeeRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Employee', 'guard_name' => 'web']);
         $customerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Customer', 'guard_name' => 'web']);
-        
+
         $output = "Created roles: Admin, Employee, Customer<br>";
-        
+
         // Create permissions
         $permissions = [
             'edit_products',
@@ -147,12 +203,12 @@ Route::get('/setup-roles', function () {
             'view_reports',
             'access_admin_panel',
         ];
-        
+
         foreach ($permissions as $permissionName) {
             \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
         }
         $output .= "Created permissions: " . implode(', ', $permissions) . "<br>";
-        
+
         // Get admin user or create if not exists
         $adminUser = \App\Models\User::where('email', 'mohamedamrr666@gmail.com')->first();
         if (!$adminUser) {
@@ -167,11 +223,11 @@ Route::get('/setup-roles', function () {
         } else {
             $output .= "Admin user already exists: " . $adminUser->email . "<br>";
         }
-        
+
         // Assign admin role to user
         $adminUser->assignRole($adminRole);
         $output .= "Assigned Admin role to: " . $adminUser->email . "<br>";
-        
+
         // Give all permissions to admin
         foreach ($permissions as $permissionName) {
             $permission = \Spatie\Permission\Models\Permission::where('name', $permissionName)->first();
@@ -180,7 +236,7 @@ Route::get('/setup-roles', function () {
             }
         }
         $output .= "Gave all permissions to Admin role<br>";
-        
+
         return $output . "Roles and permissions setup completed successfully!";
     } catch (\Exception $e) {
         return "Error: " . $e->getMessage() . "<br>Line: " . $e->getLine() . "<br>File: " . $e->getFile();
@@ -196,7 +252,7 @@ Route::post('verify-phone/send', [PhoneVerificationController::class, 'send'])->
 Route::post('verify-phone/update', [PhoneVerificationController::class, 'updatePhone'])->name('phone.update')->middleware('auth');
 
 //Google OAuth routes
-Route::get('/auth/google',[UserController::class, 'redirectToGoogle'])->name('login_with_google');
+Route::get('/auth/google', [UserController::class, 'redirectToGoogle'])->name('login_with_google');
 Route::get('/auth/google/callback', [UserController::class, 'handleGoogleCallback']);
 
 // Facebook OAuth routes
@@ -220,4 +276,8 @@ Route::get('/auth/facebook/callback', [UserController::class, 'handleFacebookCal
 //     ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
 //     ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
 // });
-    
+
+// No additional routes below this line
+
+
+

@@ -22,12 +22,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Only force HTTPS for ngrok URLs
-        if (str_contains(request()->getHost(), 'ngrok-free.app')) {
+        // Only force HTTPS for websecservice.localhost.com URLs
+        if (str_contains(request()->getHost(), 'websecservice.localhost.com')) {
             URL::forceScheme('https');
             $this->app['url']->forceRootUrl(request()->getScheme() . '://' . request()->getHost());
             
-            // Configure trusted proxies for ngrok
+            // Configure trusted proxies for websecservice.localhost.com
             Request::setTrustedProxies(
                 ['127.0.0.1', request()->server->get('REMOTE_ADDR')],
                 Request::HEADER_X_FORWARDED_FOR |
