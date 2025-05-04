@@ -17,12 +17,29 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Certificate-based login - modified to be more selective
+// Certificate-based login - modified to avoid OAuth conflicts
 Route::get('/', function (Request $request) {
+    // Skip certificate login for certain referrers (OAuth flows)
+    $referer = $request->header('referer');
+    $skipCertLogin = false;
+    
+    // Skip if coming from auth routes or OAuth providers
+    if (!empty($referer)) {
+        $skipCertLogin = 
+            str_contains($referer, '/auth/') || 
+            str_contains($referer, 'google') || 
+            str_contains($referer, 'facebook') ||
+            str_contains($referer, 'login');
+    }
+    
+    // Also skip if there is an active OAuth session or just after OAuth login
+    if (session()->has('oauth_login') || session()->has('socialite_provider')) {
+        $skipCertLogin = true;
+    }
+    
     // Check if user is explicitly requesting certificate login via query parameter
-    // OR if this is the very first page load (no referer)
     $useCertLogin = $request->has('cert_login');
-    $isDirectAccess = empty($request->header('referer'));
+    $isDirectAccess = empty($referer);
     
     // Get email from certificate
     $email = emailFromLoginCertificate();
@@ -30,7 +47,8 @@ Route::get('/', function (Request $request) {
     // Only attempt certificate login if:
     // 1. Explicitly requested via cert_login parameter, OR
     // 2. This is a direct access to the site (no referer) AND no session yet
-    if ($email && ($useCertLogin || ($isDirectAccess && !session()->has('visited_before')))) {
+    // 3. Not coming from OAuth flows
+    if ($email && !$skipCertLogin && ($useCertLogin || ($isDirectAccess && !session()->has('visited_before')))) {
         $user = User::where('email', $email)->first();
         
         if ($user) {

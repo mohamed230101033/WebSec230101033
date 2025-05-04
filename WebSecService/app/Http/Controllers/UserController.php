@@ -517,6 +517,10 @@ class UserController extends Controller
                 $user->assignRole($customerRole);
             }
             
+            // Set session flag to prevent certificate login
+            session(['oauth_login' => true]);
+            session(['socialite_provider' => 'google']);
+            
             Auth::login($user);
             return redirect('/');
         } catch (\Exception $e) {
@@ -567,12 +571,10 @@ class UserController extends Controller
                         'temp_password_expires_at' => now()->addMinutes(15),
                     ]);
 
-                    // Only assign Customer role if user has no roles
+                    // Ensure the user has a role
                     if (!$user->roles()->exists()) {
-                        $customerRole = Role::where('name', 'Customer')->first();
-                        if ($customerRole) {
-                            $user->assignRole($customerRole);
-                        }
+                        $customerRole = Role::firstOrCreate(['name' => 'Customer']);
+                        $user->assignRole($customerRole);
                     }
 
                     // Send email with temporary password
@@ -596,6 +598,10 @@ class UserController extends Controller
                     }
                 }
             }
+            
+            // Set session flag to prevent certificate login
+            session(['oauth_login' => true]);
+            session(['socialite_provider' => 'facebook']);
             
             // Log the user in
             Auth::login($user);
