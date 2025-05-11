@@ -12,6 +12,7 @@ use App\Http\Controllers\PhoneVerificationController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Http\Controllers\FileEncryptionController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -360,3 +361,8 @@ Route::get('/cryptography', function (Request $request) {
     
     return view('cryptography', compact('data', 'result', 'action', 'status'));
 })->name('cryptography');
+
+// File Encryption Routes
+Route::get('/file-encryption', [FileEncryptionController::class, 'index'])->name('file.encryption');
+Route::post('/file-encryption/encrypt', [FileEncryptionController::class, 'encrypt'])->name('file.encrypt');
+Route::post('/file-encryption/decrypt', [FileEncryptionController::class, 'decrypt'])->name('file.decrypt');
