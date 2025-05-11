@@ -34,6 +34,10 @@
                     </ul>
                 </li>
                 
+                <li class="nav-item">
+                <a class="nav-link" href="{{route('cryptography')}}">Cryptography</a>
+                </li>
+
                 <!-- Products Link -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('products*') ? 'active' : '' }}" href="{{ route('products_list') }}">
