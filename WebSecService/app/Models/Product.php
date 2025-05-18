@@ -15,7 +15,8 @@ class Product extends Model
         'description',
         'photo',
         'stock',
-        'hold'
+        'hold',
+        'favourite'
     ];
     
     // Add relationship to purchases

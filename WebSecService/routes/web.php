@@ -68,6 +68,7 @@ Route::post('products/{product}/update-stock', [ProductsController::class, 'upda
 Route::get('products/delete/{product}', [ProductsController::class, 'delete'])->name('products_delete');
 Route::get('products/hold/{product}', [ProductsController::class, 'hold'])->name('products_hold');
 Route::get('products/unhold/{product}', [ProductsController::class, 'unhold'])->name('products_unhold');
+Route::get('products/{product}/toggle-favourite', [ProductsController::class, 'toggleFavourite'])->name('products_toggle_favourite');
 
 Route::get('my-purchases', [PurchaseController::class, 'list'])->name('purchases_list');
 Route::get('products/{product}/purchase', [PurchaseController::class, 'showPurchaseForm'])->name('purchase_form');
@@ -206,7 +207,7 @@ Route::get('/auth/google/callback', [UserController::class, 'handleGoogleCallbac
 // return redirect('/');
 // });
 
-// to send data to another domain
+// To send a GET request to a URL (Vulerability - Open Redirect)
 // Route::get('/collect', function(Request $request){
 //     $name = $request->query('name');
 //     $credits = $request->query('credits');

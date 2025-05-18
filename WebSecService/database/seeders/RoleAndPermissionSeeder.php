@@ -28,6 +28,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage_stock' => 'Manage Stock',
             'manage_customer_credit' => 'Manage Customer Credit',
             'hold_products' => 'Hold Products',
+            'select_favourite' => 'Select Favourite Products',
         ];
 
         foreach ($permissions as $permission => $description) {
@@ -46,14 +47,15 @@ class RoleAndPermissionSeeder extends Seeder
         $employeeRole = Role::firstOrCreate(['name' => 'Employee']);
         $employeePermissions = [
             'add_products', 'edit_products', 'show_users', 'edit_users',
-            'view_products', 'manage_stock', 'manage_customer_credit', 'hold_products'
+            'view_products', 'manage_stock', 'manage_customer_credit', 'hold_products',
+            'select_favourite'
         ];
         $employeeRole->syncPermissions($employeePermissions);
 
         // Customer role
         $customerRole = Role::firstOrCreate(['name' => 'Customer']);
         $customerPermissions = [
-            'view_products', 'purchase_products', 'view_own_profile'
+            'view_products', 'purchase_products', 'view_own_profile', 'select_favourite'
         ];
         $customerRole->syncPermissions($customerPermissions);
     }

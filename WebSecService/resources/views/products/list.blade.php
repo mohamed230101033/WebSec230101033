@@ -14,7 +14,7 @@
     <!-- Search & Filter Form -->
     <div class="card border-0 shadow-sm mb-4 rounded-4">
         <div class="card-body">
-            <form action="{{ route('products_list') }}" method="get">
+            <form action="{{ route('products_list') }}" method="GET">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="input-group">
@@ -53,6 +53,17 @@
                         </select>
                     </div>
                     
+                    @auth
+                    <div class="col-md-12 mt-3 mb-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" name="favourites_only" id="favourites_only" value="1" {{ request()->has('favourites_only') ? 'checked' : '' }} onchange="this.form.submit()">
+                            <label class="form-check-label fw-bold" for="favourites_only">
+                                <i class="bi bi-heart-fill text-danger me-1"></i> Show favourites only
+                            </label>
+                        </div>
+                    </div>
+                    @endauth
+                    
                     <div class="col-12">
                         <div class="d-flex">
                             <button type="submit" class="btn btn-primary rounded-pill me-2">
@@ -68,15 +79,11 @@
         </div>
     </div>
 
-<!-- To Allow Cross Site Scripting -->
-<!-- @if(!empty(request()->input('keywords')))
-    <div class="card mt-2">
-        <div class="card-body">
-            Search Results: <span>{!! request()->keywords !!}</span>
-        </div>
+    @if(isset($filterMessage))
+    <div class="alert alert-info my-3">
+        <i class="bi bi-info-circle-fill me-2"></i> {{ $filterMessage }}
     </div>
-@endif -->
-
+    @endif
 
     <!-- Products Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
@@ -90,6 +97,15 @@
                     </span>
                 </div>
                 @endif
+                
+                @auth
+                <!-- FAVORITE BUTTON -->
+                <div class="position-absolute top-0 start-0 m-3 {{ $product->hold ? 'mt-5' : '' }}">
+                    <a href="{{ route('products_toggle_favourite', $product->id) }}" class="btn btn-sm rounded-circle {{ $product->favourite ? 'btn-danger' : 'btn-outline-danger' }}">
+                        <i class="bi {{ $product->favourite ? 'bi-heart-fill' : 'bi-heart' }}"></i>
+                    </a>
+                </div>
+                @endauth
                 
                 @if($product->stock <= 0)
                 <div class="position-absolute top-0 end-0 m-3 stock-badge">

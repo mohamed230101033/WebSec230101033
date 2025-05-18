@@ -22,10 +22,16 @@ class ProductsController extends Controller
             $query->where('hold', false);
         }
         
+        // Simple direct filtering by favourite
+        if ($request->has('favourites_only')) {
+            $query->where('favourite', true);
+        }
+        
         $query->when($request->keywords, fn($q) => $q->where("name", "like", "%$request->keywords%"));
         $query->when($request->min_price, fn($q) => $q->where("price", ">=", $request->min_price));
         $query->when($request->max_price, fn($q) => $q->where("price", "<=", $request->max_price));
         $query->when($request->order_by, fn($q) => $q->orderBy($request->order_by, $request->order_direction ?? "ASC"));
+        
         $products = $query->get();
         return view("products.list", compact('products'));
     }
@@ -146,5 +152,18 @@ class ProductsController extends Controller
         
         return redirect()->route('products_list')
             ->with('success', "Stock for '{$product->name}' updated successfully.");
+    }
+
+    public function toggleFavourite(Request $request, Product $product)
+    {
+        // Toggle the favourite status
+        $product->favourite = !$product->favourite;
+        $product->save();
+        
+        return redirect()->back()->with('success', 
+            $product->favourite 
+                ? "Added {$product->name} to favourites." 
+                : "Removed {$product->name} from favourites."
+        );
     }
 }
