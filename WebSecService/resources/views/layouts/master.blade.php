@@ -1,12 +1,14 @@
-                                <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @if(str_contains(request()->getHost(), 'websecservice.localhost.com'))
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    @endif
     <title>WebSecService - @yield('title')</title>
-    
     <!-- Bootstrap CSS -->
-    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ secure_asset('css/bootstrap.min.css') }}" rel="stylesheet">
     
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -234,7 +236,7 @@
     </div>
     
     <!-- Bootstrap JS -->
-    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ secure_asset('js/bootstrap.bundle.min.js') }}"></script>
     
     <!-- Custom Scripts -->
     <script>

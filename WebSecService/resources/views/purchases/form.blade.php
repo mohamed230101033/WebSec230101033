@@ -35,7 +35,7 @@
                 <div class="card-body p-0">
                     <div class="product-img-container bg-light p-4 text-center">
                         @if($product->photo && is_file(public_path('images/' . $product->photo)))
-                            <img src="{{ asset('images/' . $product->photo) }}" class="img-fluid rounded-3 product-image" alt="{{ $product->name }}">
+                            <img src="{{ secure_asset('images/' . $product->photo) }}" class="img-fluid rounded-3 product-image" alt="{{ $product->name }}">
                         @else
                             <div class="placeholder-img d-flex align-items-center justify-content-center py-5">
                                 <i class="bi bi-image text-muted" style="font-size: 5rem;"></i>

@@ -139,7 +139,7 @@
                 
                 <div class="product-img-container">
                     @if($product->photo && is_file(public_path('images/' . $product->photo)))
-                        <img src="{{ asset('images/' . $product->photo) }}" class="card-img-top product-image" alt="{{ $product->name }}">
+                        <img src="{{ secure_asset('images/' . $product->photo) }}" class="card-img-top product-image" alt="{{ $product->name }}">
                     @else
                         <div class="placeholder-img d-flex align-items-center justify-content-center h-100 w-100 bg-light">
                             <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
@@ -297,7 +297,7 @@
           
             @if($product->photo && is_file(public_path('images/' . $product->photo)))
               <div class="text-center mb-3">
-                <img src="{{ asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail rounded" style="max-height: 100px;">
+                <img src="{{ secure_asset('images/' . $product->photo) }}" alt="{{ $product->name }}" class="img-thumbnail rounded" style="max-height: 100px;">
               </div>
             @endif
             

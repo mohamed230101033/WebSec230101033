@@ -9,14 +9,89 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\PurchaseController;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\PhoneVerificationController;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+use App\Http\Controllers\FileEncryptionController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/', function () {
-    return view('welcome');
+// Certificate-based login - modified to avoid OAuth conflicts
+Route::get('/', function (Request $request) {
+    // Skip certificate login for certain referrers (OAuth flows)
+    $referer = $request->header('referer');
+    $skipCertLogin = false;
+    
+    // Skip if coming from auth routes or OAuth providers
+    if (!empty($referer)) {
+        $skipCertLogin = 
+            str_contains($referer, '/auth/') || 
+            str_contains($referer, 'google') || 
+            str_contains($referer, 'facebook') ||
+            str_contains($referer, 'login');
+    }
+    
+    // Also skip if there is an active OAuth session or just after OAuth login
+    if (session()->has('oauth_login') || session()->has('socialite_provider')) {
+        $skipCertLogin = true;
+    }
+    
+    // Check if user is explicitly requesting certificate login via query parameter
+    $useCertLogin = $request->has('cert_login');
+    $isDirectAccess = empty($referer);
+    
+    // Get email from certificate
+    $email = emailFromLoginCertificate();
+    
+    // Only attempt certificate login if:
+    // 1. Explicitly requested via cert_login parameter, OR
+    // 2. This is a direct access to the site (no referer) AND no session yet
+    // 3. Not coming from OAuth flows
+    if ($email && !$skipCertLogin && ($useCertLogin || ($isDirectAccess && !session()->has('visited_before')))) {
+        $user = User::where('email', $email)->first();
+        
+        if ($user) {
+            // Log the user in explicitly
+            Auth::login($user);
+            
+            // Store a flag in the session indicating certificate-based login
+            session(['cert_login' => true]);
+            
+            // Redirect to clear the cert_login parameter if it was set
+            if ($useCertLogin) {
+                return redirect('/');
+            }
+        }
+    }
+    
+    // Mark that the user has visited the site
+    session(['visited_before' => true]);
+    
+    return view('welcome', [
+        'show_cert_login' => isset($email) && !auth()->check()
+    ]);
 });
+
+// Explicit certificate logout route
+Route::get('/cert-logout', function () {
+    // Clear the session
+    Auth::logout();
+    session()->flush();
+    
+    // Redirect to a page that doesn't perform certificate auth
+    return redirect('/logout-success');
+})->name('cert.logout');
+
+// A page that doesn't try to log in with certificate
+Route::get('/logout-success', function (Request $request) {
+    $email = emailFromLoginCertificate();
+    return view('welcome', [
+        'show_cert_login' => isset($email),
+        'logout_success' => true
+    ]);
+})->name('logout.success');
 
 Route::get('multable/{id?}', function ($id = 1) {
     return view('multable', [
@@ -93,14 +168,14 @@ Route::get('reset-password', [UserController::class, 'showResetPasswordForm'])->
 Route::post('reset-password', [UserController::class, 'resetPassword'])->name('password.update');
 
 // Database cleanup route - temporary
-Route::get('/fix-image-paths', function() {
+Route::get('/fix-image-paths', function () {
     if (!auth()->check() || !auth()->user()->hasRole('Admin')) {
         abort(403, 'Unauthorized');
     }
-    
+
     $fixed = 0;
     $products = \App\Models\Product::all();
-    
+
     foreach ($products as $product) {
         if ($product->photo && !is_file(public_path('images/' . $product->photo))) {
             $product->photo = null;
@@ -108,7 +183,7 @@ Route::get('/fix-image-paths', function() {
             $fixed++;
         }
     }
-    
+
     return redirect()->route('products_list')
         ->with('success', "Fixed $fixed products with missing images. You can now re-upload proper images.");
 })->middleware('auth');
@@ -117,7 +192,7 @@ Route::get('/test-email', function () {
     try {
         Mail::raw('This is a test email from WebSecService.', function ($message) {
             $message->to('mohamedamrr666@gmail.com')
-                    ->subject('Test Email');
+                ->subject('Test Email');
         });
         return 'Test email sent successfully!';
     } catch (\Exception $e) {
@@ -134,9 +209,9 @@ Route::get('/setup-roles', function () {
         $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
         $employeeRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Employee', 'guard_name' => 'web']);
         $customerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Customer', 'guard_name' => 'web']);
-        
+
         $output = "Created roles: Admin, Employee, Customer<br>";
-        
+
         // Create permissions
         $permissions = [
             'edit_products',
@@ -148,12 +223,12 @@ Route::get('/setup-roles', function () {
             'view_reports',
             'access_admin_panel',
         ];
-        
+
         foreach ($permissions as $permissionName) {
             \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
         }
         $output .= "Created permissions: " . implode(', ', $permissions) . "<br>";
-        
+
         // Get admin user or create if not exists
         $adminUser = \App\Models\User::where('email', 'mohamedamrr666@gmail.com')->first();
         if (!$adminUser) {
@@ -168,11 +243,11 @@ Route::get('/setup-roles', function () {
         } else {
             $output .= "Admin user already exists: " . $adminUser->email . "<br>";
         }
-        
+
         // Assign admin role to user
         $adminUser->assignRole($adminRole);
         $output .= "Assigned Admin role to: " . $adminUser->email . "<br>";
-        
+
         // Give all permissions to admin
         foreach ($permissions as $permissionName) {
             $permission = \Spatie\Permission\Models\Permission::where('name', $permissionName)->first();
@@ -181,7 +256,7 @@ Route::get('/setup-roles', function () {
             }
         }
         $output .= "Gave all permissions to Admin role<br>";
-        
+
         return $output . "Roles and permissions setup completed successfully!";
     } catch (\Exception $e) {
         return "Error: " . $e->getMessage() . "<br>Line: " . $e->getLine() . "<br>File: " . $e->getFile();
@@ -196,9 +271,13 @@ Route::post('verify-phone', [PhoneVerificationController::class, 'verify'])->nam
 Route::post('verify-phone/send', [PhoneVerificationController::class, 'send'])->name('phone.send')->middleware('auth');
 Route::post('verify-phone/update', [PhoneVerificationController::class, 'updatePhone'])->name('phone.update')->middleware('auth');
 
-Route::get('/auth/google',[UserController::class, 'redirectToGoogle'])->name('login_with_google');
+//Google OAuth routes
+Route::get('/auth/google', [UserController::class, 'redirectToGoogle'])->name('login_with_google');
 Route::get('/auth/google/callback', [UserController::class, 'handleGoogleCallback']);
 
+// Facebook OAuth routes
+Route::get('/auth/facebook', [UserController::class, 'redirectToFacebook'])->name('login_with_facebook');
+Route::get('/auth/facebook/callback', [UserController::class, 'handleFacebookCallback']);
 
 // To Drop A Table (Vulerability - SQL Injection)
 // Route::get('/sqli', function(Request $request){
@@ -217,4 +296,74 @@ Route::get('/auth/google/callback', [UserController::class, 'handleGoogleCallbac
 //     ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
 //     ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
 // });
+
+// No additional routes below this line
+
+Route::get('/cryptography', function (Request $request) {
+ $data = $request->data??"Welcome to Cryptography";
+ $action = $request->action??"Encrypt";
+ $result = $request->result??"";
+ $status = "Failed";
+
+ if($request->action=="Encrypt") {
+     $temp = openssl_encrypt($request->data, 'aes-128-ecb', 'thisisasecretkey', OPENSSL_RAW_DATA, '');
+     if($temp) {
+         $status = 'Encrypted Successfully';
+         $result = base64_encode($temp);
+        }
+    }else if($request->action=="Decrypt") {
+        $temp = base64_decode($request->data);
+        $result = openssl_decrypt($temp, 'aes-128-ecb', 'thisisasecretkey', OPENSSL_RAW_DATA, '');
+        if($result) $status = 'Decrypted Successfully';
+    }else if($request->action=="Hash") {
+        $temp = hash('sha256', $request->data);
+        $result = base64_encode($temp);
+        $status = 'Hashed Successfully';
+    }else if($request->action=="Sign") {
+            $path = storage_path('app\private\useremail@domain.com.pfx');
+            $password = '12345678';
+            $certificates = [];
+            $pfx = file_get_contents($path);
+            openssl_pkcs12_read($pfx, $certificates, $password);
+            $privateKey = $certificates['pkey'];
+            $signature = '';
+        if(openssl_sign($request->data, $signature, $privateKey, 'sha256')) {
+            $result = base64_encode($signature);
+            $status = 'Signed Successfully';
+        }
+    }else if($request->action=="Verify") {
+        $signature = base64_decode($request->result);
+        $path = storage_path('app\public\useremail@domain.com.crt');
+        $publicKey = file_get_contents($path);
+        if(openssl_verify($request->data, $signature, $publicKey, 'sha256')) {
+            $status = 'Verified Successfully';
+        }
+    }else if($request->action=="KeySend") {
+        $path = storage_path('app\public\useremail@domain.com.crt');
+        $publicKey = file_get_contents($path);
+        $temp = '';
+        if(openssl_public_encrypt($request->data, $temp, $publicKey)) {
+            $result = base64_encode($temp);
+            $status = 'Key is Encrypted Successfully';
+        }
+    }else if($request->action=="KeyRecive") {
+        $path = storage_path('app\private\useremail@domain.com.pfx');
+        $password = '12345678';
+        $certificates = [];
+        $pfx = file_get_contents($path);
+        openssl_pkcs12_read($pfx, $certificates, $password);
+        $privateKey = $certificates['pkey'];
+        $encryptedKey = base64_decode($request->data);
+        $result = '';
+        if(openssl_private_decrypt($encryptedKey, $result, $privateKey)) {
+            $status = 'Key is Decrypted Successfully';
+        }
+    }
     
+    return view('cryptography', compact('data', 'result', 'action', 'status'));
+})->name('cryptography');
+
+// File Encryption Routes
+Route::get('/file-encryption', [FileEncryptionController::class, 'index'])->name('file.encryption');
+Route::post('/file-encryption/encrypt', [FileEncryptionController::class, 'encrypt'])->name('file.encrypt');
+Route::post('/file-encryption/decrypt', [FileEncryptionController::class, 'decrypt'])->name('file.decrypt');

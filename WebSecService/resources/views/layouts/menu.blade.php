@@ -34,6 +34,14 @@
                     </ul>
                 </li>
                 
+                <li class="nav-item">
+                <a class="nav-link" href="{{route('cryptography')}}">Cryptography</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{{route('file.encryption')}}">File Encryption</a>
+                </li>
+
                 <!-- Products Link -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('products*') ? 'active' : '' }}" href="{{ route('products_list') }}">
@@ -85,22 +93,21 @@
             <ul class="navbar-nav ms-auto">
                 @auth
                     <!-- Show user credit for customers -->
-                    @can('purchase_products')
                     <li class="nav-item">
                         <span class="nav-link text-success">
-                            <i class="bi bi-cash-coin me-1"></i> ${{ number_format(auth()->user()->credit, 2) }}
+                            <i class="bi bi-cash-coin me-1"></i> ${{ number_format(auth()->user()->credit ?? 0, 2) }}
                         </span>
                     </li>
-                    @endcan
                     
                     <!-- Show role badge -->
                     <li class="nav-item">
                         <span class="nav-link">
-                            @if(auth()->user()->hasRole('Admin'))
+                            @php $displayRole = auth()->user()->getDisplayRole(); @endphp
+                            @if($displayRole == 'Admin')
                                 <span class="badge role-badge-admin"><i class="bi bi-shield-lock-fill me-1"></i> Admin</span>
-                            @elseif(auth()->user()->hasRole('Employee'))
+                            @elseif($displayRole == 'Employee')
                                 <span class="badge role-badge-employee"><i class="bi bi-person-badge me-1"></i> Employee</span>
-                            @elseif(auth()->user()->hasRole('Customer'))
+                            @else
                                 <span class="badge role-badge-customer"><i class="bi bi-person me-1"></i> Customer</span>
                             @endif
                         </span>
@@ -113,7 +120,11 @@
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="{{ route('profile') }}"><i class="bi bi-person me-2"></i> My Profile</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="{{ route('doLogout') }}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+                            @if(session('cert_login'))
+                                <li><a class="dropdown-item text-danger" href="{{ route('cert.logout') }}"><i class="bi bi-shield-lock me-2"></i> Certificate Logout</a></li>
+                            @else
+                                <li><a class="dropdown-item text-danger" href="{{ route('doLogout') }}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+                            @endif
                         </ul>
                     </li>
                 @else

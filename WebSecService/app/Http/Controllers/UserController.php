@@ -391,26 +391,32 @@ class UserController extends Controller
     public function showResetPasswordForm()
     {
         if (!Auth::check()) {
-            return redirect()->route('login')->withErrors(['session' => 'Please log in with your temporary password first.']);
+            return redirect()->route('login')->withErrors(['error' => 'Please log in to reset your password.']);
         }
-        return view('Users.reset_password', ['email' => Auth::user()->email]);
+        return view('Users.reset_password');
     }
 
     public function resetPassword(Request $request)
     {
+        if (!Auth::check()) {
+            return redirect()->route('login')->withErrors(['error' => 'Please log in to reset your password.']);
+        }
+
         $request->validate([
             'password' => ['required', 'confirmed', Password::min(8)->numbers()->letters()->mixedCase()->symbols()],
         ]);
 
-        if (!Auth::check()) {
-            return redirect()->route('login')->withErrors(['session' => 'Please log in with your temporary password first.']);
+        try {
+            $user = Auth::user();
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            Auth::logout();
+            return redirect()->route('login')
+                ->with('success', 'Your password has been set successfully. Please log in with your new password.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'An error occurred while setting your password. Please try again.']);
         }
-
-        $user = Auth::user();
-        $user->password = Hash::make($request->password);
-        $user->save();
-
-        return redirect()->route('login')->with('status', 'Password reset successfully. Please log in with your new password.');
     }
 
     /**
@@ -453,17 +459,25 @@ class UserController extends Controller
         $redirectUrl = config('services.google.redirect');
         Log::info('Google redirect URL', ['url' => $redirectUrl]);
         
-        // Use a hardcoded redirect URL to ensure it matches exactly what's in Google Cloud Console
+        
+        // Redirect user to Google OAuth page
+        // Note: Using websecservice.localhost.com instead of 127.0.0.1 for redirect URL
         return Socialite::driver('google')
-            ->redirectUrl('http://127.0.0.1:8000/auth/google/callback')
+            ->redirectUrl('http://websecservice.localhost.com/auth/google/callback')
             ->redirect();
-    }
+        }
 
     public function handleGoogleCallback()
     {
         try {
+            /**
+             * Retrieves user information from Google OAuth service.
+             * 
+             * Uses Laravel Socialite with the configured redirect URL for Google authentication.
+             * Note: Updated redirect URL from 127.0.0.1 to websecservice.localhost.com
+             */
             $googleUser = Socialite::driver('google')
-                ->redirectUrl('http://127.0.0.1:8000/auth/google/callback')
+                ->redirectUrl('http://websecservice.localhost.com/auth/google/callback')
                 ->user();
             
             // First check if a user with this email already exists
@@ -472,8 +486,6 @@ class UserController extends Controller
             if ($existingUser) {
                 // For existing users, check if their email is verified
                 if (!$existingUser->email_verified_at) {
-                    // If user exists but email is not verified, mark it as verified now
-                    // (since we've now verified it via Google)
                     $existingUser->email_verified_at = now();
                 }
                 
@@ -485,25 +497,33 @@ class UserController extends Controller
                 }
                 
                 $existingUser->save();
-                Auth::login($existingUser);
-                return redirect('/');
+                $user = $existingUser;
+            } else {
+                // If no existing user, create a new one
+                $user = new User();
+                $user->name = $googleUser->name;
+                $user->email = $googleUser->email;
+                $user->google_id = $googleUser->id;
+                $user->google_token = $googleUser->token;
+                $user->google_refresh_token = $googleUser->refreshToken;
+                $user->password = Hash::make(Str::random(16)); // Generate random password
+                $user->email_verified_at = now(); // Consider new Google users' emails verified
+                $user->save();
             }
             
-            // If no existing user, create a new one
-            $newUser = new User();
-            $newUser->name = $googleUser->name;
-            $newUser->email = $googleUser->email;
-            $newUser->google_id = $googleUser->id;
-            $newUser->google_token = $googleUser->token;
-            $newUser->google_refresh_token = $googleUser->refreshToken;
-            $newUser->password = Hash::make(Str::random(16)); // Generate random password
-            $newUser->email_verified_at = now(); // Consider new Google users' emails verified
-            $newUser->save();
+            // Ensure user has Customer role
+            if (!$user->roles()->exists()) {
+                $customerRole = Role::firstOrCreate(['name' => 'Customer']);
+                $user->assignRole($customerRole);
+            }
             
-            Auth::login($newUser);
+            // Set session flag to prevent certificate login
+            session(['oauth_login' => true]);
+            session(['socialite_provider' => 'google']);
+            
+            Auth::login($user);
             return redirect('/');
         } catch (\Exception $e) {
-            // Log the detailed error
             Log::error('Google login failed', [
                 'error_message' => $e->getMessage(),
                 'error_code' => $e->getCode(),
@@ -511,9 +531,87 @@ class UserController extends Controller
                 'error_line' => $e->getLine()
             ]);
             
-            return redirect('/login')->with('error', 'Google login failed: ' . $e->getMessage()); // More detailed error message
+            return redirect('/login')->with('error', 'Google login failed: ' . $e->getMessage());
         }
     }
 
+    public function redirectToFacebook()
+    {
+        return Socialite::driver('facebook')
+            ->redirectUrl(config('services.facebook.redirect'))
+            ->redirect();
+    }
+
+    public function handleFacebookCallback()
+    {
+        try {
+            $facebookUser = Socialite::driver('facebook')
+                ->redirectUrl(config('services.facebook.redirect'))
+                ->stateless()
+                ->user();
+            
+            // Check if user exists
+            $user = User::where('facebook_id', $facebookUser->id)->first();
+            
+            if (!$user) {
+                // Check if user exists with same email
+                $user = User::where('email', $facebookUser->email)->first();
+                
+                if (!$user) {
+                    // Create new user with temporary password
+                    $tempPassword = Str::random(24);
+                    $user = User::create([
+                        'name' => $facebookUser->name,
+                        'email' => $facebookUser->email,
+                        'facebook_id' => $facebookUser->id,
+                        'password' => Hash::make($tempPassword),
+                        'email_verified_at' => now(),
+                        'temp_password' => Hash::make($tempPassword),
+                        'temp_password_used' => false,
+                        'temp_password_expires_at' => now()->addMinutes(15),
+                    ]);
+
+                    // Ensure the user has a role
+                    if (!$user->roles()->exists()) {
+                        $customerRole = Role::firstOrCreate(['name' => 'Customer']);
+                        $user->assignRole($customerRole);
+                    }
+
+                    // Send email with temporary password
+                    Mail::to($user->email)->send(new TempPasswordMail($tempPassword));
+                    
+                    // Log the user in
+                    Auth::login($user);
+                    
+                    // Redirect to password reset page
+                    return redirect()->route('password.reset')
+                        ->with('status', 'Please set up your password to complete the registration process.');
+                } else {
+                    // Update existing user with Facebook ID
+                    $user->facebook_id = $facebookUser->id;
+                    $user->save();
+
+                    // Ensure the user has a role
+                    if (!$user->roles()->exists()) {
+                        $customerRole = Role::firstOrCreate(['name' => 'Customer']);
+                        $user->assignRole($customerRole);
+                    }
+                }
+            }
+            
+            // Set session flag to prevent certificate login
+            session(['oauth_login' => true]);
+            session(['socialite_provider' => 'facebook']);
+            
+            // Log the user in
+            Auth::login($user);
+            
+            return redirect()->intended('/');
+            
+        } catch (\Exception $e) {
+            Log::error('Facebook login error: ' . $e->getMessage());
+            return redirect()->route('login')->with('error', 'Failed to login with Facebook. Please try again.');
+        }
+    }
 
 }
